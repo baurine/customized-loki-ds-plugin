@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 
 import { ExploreQueryFieldProps, SelectableValue } from '@grafana/data';
-import { InlineField, Input, QueryField, Select } from '@grafana/ui';
+import { InlineField, Input, QueryField, Select, TagList } from '@grafana/ui';
 
-import { DataSource } from './datasource';
+import { DataSource, ADD_FILTER_EVENT } from './datasource';
 import { MyQuery, MyDataSourceOptions } from './types';
+
+import './style.css';
 
 export type Props = ExploreQueryFieldProps<DataSource, MyQuery, MyDataSourceOptions>;
 
@@ -32,6 +34,12 @@ export function ExploreQueryEditor(props: Props) {
   const [selectedLogType, setSelectedLogType] = useState<SelectableValue | undefined>(logTypeOptions[0]);
 
   const [search, setSearch] = useState('');
+
+  const [filters, setFilters] = useState<string[]>([]);
+
+  const onFilterClick = (name: string) => {
+    setFilters(filters.filter(f => f !== name));
+  };
 
   const onQueryChange = (value: string, override?: boolean) => {
     const { query, onChange, onRunQuery } = props;
@@ -149,13 +157,14 @@ export function ExploreQueryEditor(props: Props) {
     if (selectedLogType) {
       exprArr.push(`container=~"${selectedLogType.value}"`);
     }
+    filters.forEach(f => exprArr.push(f));
     const finalExpr = `{${exprArr.join(', ')}} |~ "${search}"`;
 
     const { query, onChange } = props;
     if (onChange) {
       onChange({ ...query, expr: finalExpr });
     }
-  }, [selectedCluster, selectedPod, selectedLogType, search]);
+  }, [selectedCluster, selectedPod, selectedLogType, search, filters]);
 
   useEffect(() => {
     async function queryPods() {
@@ -200,6 +209,20 @@ export function ExploreQueryEditor(props: Props) {
       setLoadingPod(false);
     }
   }, [selectedCluster]);
+
+  useEffect(() => {
+    function addFilter(event: Event) {
+      const filter = (event as CustomEvent).detail;
+      setFilters(prevFilters => {
+        if (prevFilters.indexOf(filter) < 0) {
+          return prevFilters.concat(filter);
+        }
+        return prevFilters;
+      });
+    }
+    document.addEventListener(ADD_FILTER_EVENT, addFilter);
+    return () => document.removeEventListener(ADD_FILTER_EVENT, addFilter);
+  }, []);
 
   return (
     <div>
@@ -255,6 +278,9 @@ export function ExploreQueryEditor(props: Props) {
         query={query.expr || ''}
         placeholder="Enter a query"
       />
+      <InlineField label="Filters" className="filters">
+        <TagList tags={filters} className="tags" onClick={onFilterClick} />
+      </InlineField>
     </div>
   );
 }

@@ -13,6 +13,8 @@ import { getDataSourceSrv } from '@grafana/runtime';
 
 import { MyQuery, MyDataSourceOptions } from './types';
 
+export const ADD_FILTER_EVENT = 'customized-loki-add-filter';
+
 export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
   promDS: DataSourceApi | null = null;
   lokiDS: DataSourceApi | null = null;
@@ -109,4 +111,28 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
   getLogRowContext = (row: LogRowModel, options?: any) => {
     return this.lokiDS!.getLogRowContext!(row, options);
   };
+
+  modifyQuery(query: MyQuery, action: any): MyQuery {
+    let filter = '';
+    switch (action.type) {
+      case 'ADD_FILTER': {
+        filter = `${action.key}="${action.value}"`;
+        break;
+      }
+      case 'ADD_FILTER_OUT': {
+        filter = `${action.key}!="${action.value}"`;
+        break;
+      }
+      default:
+        break;
+    }
+    if (filter !== '') {
+      // send event
+      const event = new CustomEvent(ADD_FILTER_EVENT, { detail: filter });
+      document.dispatchEvent(event);
+    }
+    // hack, set the expr to empty, to prevent the meaningless query
+    // return query
+    return { ...query, expr: '' };
+  }
 }
