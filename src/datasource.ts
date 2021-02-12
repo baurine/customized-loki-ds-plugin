@@ -1,16 +1,16 @@
-import defaults from 'lodash/defaults';
+// import { Observable, of } from 'rxjs';
+import { Observable, of } from '@grafana/data/node_modules/rxjs';
 
 import {
   DataQueryRequest,
   DataQueryResponse,
   DataSourceApi,
   DataSourceInstanceSettings,
-  MutableDataFrame,
-  FieldType,
+  LoadingState,
 } from '@grafana/data';
 import { getDataSourceSrv } from '@grafana/runtime';
 
-import { MyQuery, MyDataSourceOptions, defaultQuery } from './types';
+import { MyQuery, MyDataSourceOptions } from './types';
 
 export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
   promDS: DataSourceApi | null = null;
@@ -18,26 +18,45 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
 
   constructor(private instanceSettings: DataSourceInstanceSettings<MyDataSourceOptions>) {
     super(instanceSettings);
+
+    const {
+      jsonData: { lokiDataSourceUid },
+    } = this.instanceSettings;
+    const dataSourceSrv = getDataSourceSrv();
+    const lokiDsSetting = dataSourceSrv.getInstanceSettings(lokiDataSourceUid);
+    if (lokiDsSetting) {
+      dataSourceSrv.get(lokiDsSetting.name).then(ds => {
+        this.lokiDS = ds as any;
+      });
+    }
   }
 
-  async query(options: DataQueryRequest<MyQuery>): Promise<DataQueryResponse> {
-    const { range } = options;
-    const from = range!.from.valueOf();
-    const to = range!.to.valueOf();
-
-    // Return a constant for each query.
-    const data = options.targets.map(target => {
-      const query = defaults(target, defaultQuery);
-      return new MutableDataFrame({
-        refId: query.refId,
-        fields: [
-          { name: 'Time', values: [from, to], type: FieldType.time },
-          { name: 'Value', values: [query.constant, query.constant], type: FieldType.number },
-        ],
+  getPromDS(): Promise<DataSourceApi> {
+    if (this.promDS) {
+      return Promise.resolve(this.promDS);
+    }
+    const {
+      jsonData: { promDataSourceUid },
+    } = this.instanceSettings;
+    const dataSourceSrv = getDataSourceSrv();
+    const promDsSetting = dataSourceSrv.getInstanceSettings(promDataSourceUid);
+    if (promDsSetting) {
+      return dataSourceSrv.get(promDsSetting.name).then(ds => {
+        this.promDS = ds as any;
+        return ds as any;
       });
-    });
+    }
+    throw Error('Has no prometheus datasource');
+  }
 
-    return { data };
+  query(options: DataQueryRequest<MyQuery>): Promise<DataQueryResponse> | Observable<DataQueryResponse> {
+    if (this.lokiDS === null) {
+      return of({
+        data: [],
+        state: LoadingState.Done,
+      });
+    }
+    return this.lokiDS.query(options);
   }
 
   async testDatasource() {

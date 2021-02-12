@@ -1,13 +1,8 @@
 import { DataQuery, DataSourceJsonData } from '@grafana/data';
 
 export interface MyQuery extends DataQuery {
-  queryText?: string;
-  constant: number;
+  expr: string; // keep same as the loki data source
 }
-
-export const defaultQuery: Partial<MyQuery> = {
-  constant: 6.5,
-};
 
 /**
  * These are options configured for each DataSource instance
@@ -15,11 +10,4 @@ export const defaultQuery: Partial<MyQuery> = {
 export interface MyDataSourceOptions extends DataSourceJsonData {
   promDataSourceUid: string;
   lokiDataSourceUid: string;
-}
-
-/**
- * Value that is used in the backend, but never sent over HTTP to the frontend
- */
-export interface MySecureJsonData {
-  apiKey?: string;
 }
