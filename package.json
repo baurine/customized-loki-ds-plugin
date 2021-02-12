@@ -1,0 +1,25 @@
+{
+  "name": "ping-cap-customized-loki",
+  "version": "1.0.0",
+  "description": "a customized loki datasource plugin for improving explore use experience",
+  "scripts": {
+    "build": "grafana-toolkit plugin:build",
+    "test": "grafana-toolkit plugin:test",
+    "dev": "grafana-toolkit plugin:dev",
+    "watch": "grafana-toolkit plugin:dev --watch",
+    "sign": "grafana-toolkit plugin:sign"
+  },
+  "author": "baurine",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@grafana/data": "latest",
+    "@grafana/toolkit": "latest",
+    "@grafana/ui": "latest",
+    "@types/lodash": "latest",
+    "@testing-library/jest-dom": "5.4.0",
+    "@testing-library/react": "^10.0.2"
+  },
+  "engines": {
+    "node": ">=14"
+  }
+}
