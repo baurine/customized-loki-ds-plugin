@@ -7,6 +7,7 @@ import {
   DataSourceApi,
   DataSourceInstanceSettings,
   LoadingState,
+  LogRowModel,
 } from '@grafana/data';
 import { getDataSourceSrv } from '@grafana/runtime';
 
@@ -100,4 +101,12 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
       message: 'Both prometheus and loki data source are working',
     };
   }
+
+  showContextToggle(row?: LogRowModel) {
+    return this.lokiDS!.showContextToggle!(row);
+  }
+
+  getLogRowContext = (row: LogRowModel, options?: any) => {
+    return this.lokiDS!.getLogRowContext!(row, options);
+  };
 }
