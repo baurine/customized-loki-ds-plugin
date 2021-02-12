@@ -1,83 +1,66 @@
-import React, { ChangeEvent, PureComponent } from 'react';
-import { LegacyForms } from '@grafana/ui';
-import { DataSourcePluginOptionsEditorProps } from '@grafana/data';
-import { MyDataSourceOptions, MySecureJsonData } from './types';
+import React, { useEffect, useState } from 'react';
 
-const { SecretFormField, FormField } = LegacyForms;
+import { InlineLabel, Select } from '@grafana/ui';
+import { DataSourcePluginOptionsEditorProps, SelectableValue } from '@grafana/data';
+import { getDataSourceSrv } from '@grafana/runtime';
+import { MyDataSourceOptions } from './types';
 
 interface Props extends DataSourcePluginOptionsEditorProps<MyDataSourceOptions> {}
 
-interface State {}
+export function ConfigEditor(props: Props) {
+  const [dsList, setDsList] = useState<SelectableValue[]>([]);
 
-export class ConfigEditor extends PureComponent<Props, State> {
-  onPathChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const { onOptionsChange, options } = this.props;
+  useEffect(() => {
+    const { options } = props;
+    const dsSrv = getDataSourceSrv();
+    const allDS = dsSrv.getList();
+    const dsList: SelectableValue[] = allDS
+      .filter(ds => ds.uid !== undefined && ds.id !== options.id)
+      .map(ds => ({
+        label: ds.name,
+        value: ds.uid,
+      }));
+    setDsList(dsList);
+  }, []);
+
+  const onPromDSChange = (v: SelectableValue) => {
+    const { onOptionsChange, options } = props;
     const jsonData = {
       ...options.jsonData,
-      path: event.target.value,
+      promDataSourceUid: v?.value || '',
     };
     onOptionsChange({ ...options, jsonData });
   };
 
-  // Secure field (only sent to the backend)
-  onAPIKeyChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const { onOptionsChange, options } = this.props;
-    onOptionsChange({
-      ...options,
-      secureJsonData: {
-        apiKey: event.target.value,
-      },
-    });
+  const onLokiDSChange = (v: SelectableValue) => {
+    const { onOptionsChange, options } = props;
+    const jsonData = {
+      ...options.jsonData,
+      lokiDataSourceUid: v?.value || '',
+    };
+    onOptionsChange({ ...options, jsonData });
   };
 
-  onResetAPIKey = () => {
-    const { onOptionsChange, options } = this.props;
-    onOptionsChange({
-      ...options,
-      secureJsonFields: {
-        ...options.secureJsonFields,
-        apiKey: false,
-      },
-      secureJsonData: {
-        ...options.secureJsonData,
-        apiKey: '',
-      },
-    });
-  };
-
-  render() {
-    const { options } = this.props;
-    const { jsonData, secureJsonFields } = options;
-    const secureJsonData = (options.secureJsonData || {}) as MySecureJsonData;
-
-    return (
-      <div className="gf-form-group">
-        <div className="gf-form">
-          <FormField
-            label="Path"
-            labelWidth={6}
-            inputWidth={20}
-            onChange={this.onPathChange}
-            value={jsonData.path || ''}
-            placeholder="json field returned to frontend"
-          />
-        </div>
-
-        <div className="gf-form-inline">
-          <div className="gf-form">
-            <SecretFormField
-              isConfigured={(secureJsonFields && secureJsonFields.apiKey) as boolean}
-              value={secureJsonData.apiKey || ''}
-              label="API Key"
-              placeholder="secure json field (backend only)"
-              labelWidth={6}
-              inputWidth={20}
-              onReset={this.onResetAPIKey}
-              onChange={this.onAPIKeyChange}
-            />
-          </div>
-        </div>
+  const {
+    options: {
+      jsonData: { promDataSourceUid, lokiDataSourceUid },
+    },
+  } = props;
+  return (
+    <div className="gf-form-group">
+      <div className="gf-form">
+        <InlineLabel width={16} tooltip="Select a Prometheus DataSource">
+          Prometheus
+        </InlineLabel>
+        <Select isClearable={true} options={dsList} value={promDataSourceUid} onChange={onPromDSChange} width={36} />
       </div>
-    );
-  }
+
+      <div className="gf-form">
+        <InlineLabel width={16} tooltip="Select a Loki DataSource">
+          Loki
+        </InlineLabel>
+        <Select isClearable={true} options={dsList} value={lokiDataSourceUid} onChange={onLokiDSChange} width={36} />
+      </div>
+    </div>
+  );
 }
