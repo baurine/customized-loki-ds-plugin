@@ -8,11 +8,15 @@ import {
   MutableDataFrame,
   FieldType,
 } from '@grafana/data';
+import { getDataSourceSrv } from '@grafana/runtime';
 
 import { MyQuery, MyDataSourceOptions, defaultQuery } from './types';
 
 export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
-  constructor(instanceSettings: DataSourceInstanceSettings<MyDataSourceOptions>) {
+  promDS: DataSourceApi | null = null;
+  lokiDS: DataSourceApi | null = null;
+
+  constructor(private instanceSettings: DataSourceInstanceSettings<MyDataSourceOptions>) {
     super(instanceSettings);
   }
 
@@ -37,10 +41,44 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
   }
 
   async testDatasource() {
-    // Implement a health check for your data source.
+    const {
+      jsonData: { lokiDataSourceUid, promDataSourceUid },
+    } = this.instanceSettings;
+
+    if (!promDataSourceUid) {
+      throw new Error('Promethues datasource is empty!');
+    }
+    if (!lokiDataSourceUid) {
+      throw new Error('Loki datasource is empty!');
+    }
+
+    const dataSourceSrv = getDataSourceSrv();
+    const promDsSetting = dataSourceSrv.getInstanceSettings(promDataSourceUid);
+    if (!promDsSetting) {
+      throw new Error(`Target promethues datasource doesn't exist anymore !`);
+    }
+    const lokiDsSetting = dataSourceSrv.getInstanceSettings(lokiDataSourceUid);
+    if (!lokiDsSetting) {
+      throw new Error(`Target loki datasource doesn't exist anymore !`);
+    }
+
+    const promDs = await dataSourceSrv.get(promDsSetting.name);
+    this.promDS = promDs as any;
+    const promRes = await promDs.testDatasource();
+    if (promRes.status === 'error') {
+      return promRes;
+    }
+
+    const lokiDs = await dataSourceSrv.get(lokiDsSetting.name);
+    this.lokiDS = lokiDs as any;
+    const lokiRes = await lokiDs.testDatasource();
+    if (lokiRes.status === 'error') {
+      return lokiRes;
+    }
+
     return {
       status: 'success',
-      message: 'Success',
+      message: 'Both prometheus and loki data source are working',
     };
   }
 }
