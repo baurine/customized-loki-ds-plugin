@@ -1,5 +1,5 @@
 {
-  "name": "ping-cap-customized-loki",
+  "name": "pingcap-customized-loki",
   "version": "1.0.0",
   "description": "a customized loki datasource plugin for improving explore use experience",
   "scripts": {
@@ -9,7 +9,7 @@
     "watch": "grafana-toolkit plugin:dev --watch",
     "sign": "grafana-toolkit plugin:sign"
   },
-  "author": "baurine",
+  "author": "PingCAP",
   "license": "Apache-2.0",
   "devDependencies": {
     "@grafana/data": "latest",
