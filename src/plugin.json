@@ -1,18 +1,16 @@
 {
   "$schema": "https://raw.githubusercontent.com/grafana/grafana/master/docs/sources/developers/plugins/plugin.schema.json",
   "type": "datasource",
-  "name": "customized-loki",
-  "id": "ping-cap-customized-loki",
+  "name": "pingcap-customized-loki",
+  "id": "customized-loki-datasource",
   "metrics": true,
   "info": {
     "description": "a customized loki datasource plugin for improving explore use experience",
     "author": {
-      "name": "baurine",
-      "url": ""
+      "name": "PingCAP",
+      "url": "https://pingcap.com/"
     },
-    "keywords": [
-      "loki"
-    ],
+    "keywords": ["loki"],
     "logos": {
       "small": "img/logo.svg",
       "large": "img/logo.svg"
