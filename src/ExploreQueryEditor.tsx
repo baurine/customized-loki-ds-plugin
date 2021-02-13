@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 
 import { ExploreQueryFieldProps, SelectableValue } from '@grafana/data';
 import { InlineField, Input, QueryField, Select, TagList } from '@grafana/ui';
@@ -11,7 +11,7 @@ import './style.css';
 export type Props = ExploreQueryFieldProps<DataSource, MyQuery, MyDataSourceOptions>;
 
 export function ExploreQueryEditor(props: Props) {
-  const { query, datasource } = props;
+  const { query, datasource, onChange } = props;
 
   const [tenantOptions, setTenantOptions] = useState<SelectableValue[]>([]);
   const [selectedTenant, setSelectedTenant] = useState<SelectableValue | undefined>(undefined);
@@ -92,7 +92,7 @@ export function ExploreQueryEditor(props: Props) {
     } finally {
       setLoadingTenant(false);
     }
-  }, []);
+  }, [datasource]);
 
   useEffect(() => {
     async function queryClusters() {
@@ -141,7 +141,12 @@ export function ExploreQueryEditor(props: Props) {
     } finally {
       setLoadingCluster(false);
     }
-  }, [selectedTenant]);
+  }, [datasource, selectedTenant]);
+
+  const changeQueryRef = useRef<(expr: string) => void>();
+  changeQueryRef.current = (expr: string) => {
+    onChange?.({ ...query, expr });
+  };
 
   useEffect(() => {
     let exprArr: string[] = [];
@@ -159,11 +164,7 @@ export function ExploreQueryEditor(props: Props) {
     }
     filters.forEach(f => exprArr.push(f));
     const finalExpr = `{${exprArr.join(', ')}} |~ "${search}"`;
-
-    const { query, onChange } = props;
-    if (onChange) {
-      onChange({ ...query, expr: finalExpr });
-    }
+    changeQueryRef.current!(finalExpr);
   }, [selectedCluster, selectedPod, selectedLogType, search, filters]);
 
   useEffect(() => {
@@ -208,7 +209,7 @@ export function ExploreQueryEditor(props: Props) {
     } finally {
       setLoadingPod(false);
     }
-  }, [selectedCluster]);
+  }, [datasource, selectedCluster]);
 
   useEffect(() => {
     function addFilter(event: Event) {

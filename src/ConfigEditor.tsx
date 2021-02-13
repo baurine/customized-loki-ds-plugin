@@ -9,19 +9,24 @@ interface Props extends DataSourcePluginOptionsEditorProps<MyDataSourceOptions> 
 
 export function ConfigEditor(props: Props) {
   const [dsList, setDsList] = useState<SelectableValue[]>([]);
+  const {
+    options: {
+      id: selfId, // plugin self id
+      jsonData: { promDataSourceUid, lokiDataSourceUid },
+    },
+  } = props;
 
   useEffect(() => {
-    const { options } = props;
     const dsSrv = getDataSourceSrv();
     const allDS = dsSrv.getList();
     const dsList: SelectableValue[] = allDS
-      .filter(ds => ds.uid !== undefined && ds.id !== options.id)
+      .filter(ds => ds.uid !== undefined && ds.id !== selfId)
       .map(ds => ({
         label: ds.name,
         value: ds.uid,
       }));
     setDsList(dsList);
-  }, []);
+  }, [selfId]);
 
   const onPromDSChange = (v: SelectableValue) => {
     const { onOptionsChange, options } = props;
@@ -41,11 +46,6 @@ export function ConfigEditor(props: Props) {
     onOptionsChange({ ...options, jsonData });
   };
 
-  const {
-    options: {
-      jsonData: { promDataSourceUid, lokiDataSourceUid },
-    },
-  } = props;
   return (
     <div className="gf-form-group">
       <div className="gf-form">
