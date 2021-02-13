@@ -11,7 +11,7 @@ import './style.css';
 export type Props = ExploreQueryFieldProps<DataSource, MyQuery, MyDataSourceOptions>;
 
 export function ExploreQueryEditor(props: Props) {
-  const { query, datasource, onChange } = props;
+  const { query, datasource, onChange, onRunQuery } = props;
 
   const [tenantOptions, setTenantOptions] = useState<SelectableValue[]>([]);
   const [selectedTenant, setSelectedTenant] = useState<SelectableValue | undefined>(undefined);
@@ -38,11 +38,14 @@ export function ExploreQueryEditor(props: Props) {
   const [filters, setFilters] = useState<string[]>([]);
 
   const onFilterClick = (name: string) => {
+    // remove filter
     setFilters(filters.filter(f => f !== name));
+    setTimeout(() => {
+      runQueryRef.current!();
+    }, 300);
   };
 
   const onQueryChange = (value: string, override?: boolean) => {
-    const { query, onChange, onRunQuery } = props;
     if (onChange) {
       onChange({ ...query, expr: value });
       if (override && onRunQuery) {
@@ -187,19 +190,24 @@ export function ExploreQueryEditor(props: Props) {
     }
   }, [datasource, selectedCluster]);
 
+  const runQueryRef = useRef<() => void>();
+  runQueryRef.current = () => {
+    onRunQuery();
+  };
+
   useEffect(() => {
     function addFilter(event: Event) {
       const filter = (event as CustomEvent).detail;
-      setFilters(prevFilters => {
-        if (prevFilters.indexOf(filter) < 0) {
-          return prevFilters.concat(filter);
-        }
-        return prevFilters;
-      });
+      if (filters.indexOf(filter) < 0) {
+        setFilters(filters.concat(filter));
+        setTimeout(() => {
+          runQueryRef.current!();
+        }, 300);
+      }
     }
     document.addEventListener(ADD_FILTER_EVENT, addFilter);
     return () => document.removeEventListener(ADD_FILTER_EVENT, addFilter);
-  }, []);
+  }, [filters]);
 
   const changeQueryRef = useRef<(expr: string) => void>();
   changeQueryRef.current = (expr: string) => {
