@@ -143,30 +143,6 @@ export function ExploreQueryEditor(props: Props) {
     }
   }, [datasource, selectedTenant]);
 
-  const changeQueryRef = useRef<(expr: string) => void>();
-  changeQueryRef.current = (expr: string) => {
-    onChange?.({ ...query, expr });
-  };
-
-  useEffect(() => {
-    let exprArr: string[] = [];
-    if (selectedCluster) {
-      exprArr.push(`namespace=~".*${selectedCluster.value}"`);
-    } else {
-      // if not select a target cluster, it is expected to return empty logs
-      exprArr.push(`namespace="unknown"`);
-    }
-    if (selectedPod) {
-      exprArr.push(`instance=~"${selectedPod.value}"`);
-    }
-    if (selectedLogType) {
-      exprArr.push(`container=~"${selectedLogType.value}"`);
-    }
-    filters.forEach(f => exprArr.push(f));
-    const finalExpr = `{${exprArr.join(', ')}} |~ "${search}"`;
-    changeQueryRef.current!(finalExpr);
-  }, [selectedCluster, selectedPod, selectedLogType, search, filters]);
-
   useEffect(() => {
     async function queryPods() {
       setPodOptions([]);
@@ -224,6 +200,30 @@ export function ExploreQueryEditor(props: Props) {
     document.addEventListener(ADD_FILTER_EVENT, addFilter);
     return () => document.removeEventListener(ADD_FILTER_EVENT, addFilter);
   }, []);
+
+  const changeQueryRef = useRef<(expr: string) => void>();
+  changeQueryRef.current = (expr: string) => {
+    onChange?.({ ...query, expr });
+  };
+
+  useEffect(() => {
+    let exprArr: string[] = [];
+    if (selectedCluster) {
+      exprArr.push(`namespace=~".*${selectedCluster.value}"`);
+    } else {
+      // if not select a target cluster, it is expected to return empty logs
+      exprArr.push(`namespace="unknown"`);
+    }
+    if (selectedPod) {
+      exprArr.push(`instance=~"${selectedPod.value}"`);
+    }
+    if (selectedLogType) {
+      exprArr.push(`container=~"${selectedLogType.value}"`);
+    }
+    filters.forEach(f => exprArr.push(f));
+    const finalExpr = `{${exprArr.join(', ')}} |~ "${search}"`;
+    changeQueryRef.current!(finalExpr);
+  }, [selectedCluster, selectedPod, selectedLogType, search, filters]);
 
   return (
     <div>
