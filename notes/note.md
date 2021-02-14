@@ -6,7 +6,7 @@
 
 [Loki](https://grafana.com/oss/loki/) 是 Grafana 团队开发的一款水平可扩展，高可用性，多租户的日志聚合系统。它从 Prometheus 受到启发，"Like Prometheus, but for logs"，它不为日志内容编制索引，而是为每个日志流编制一组标签，因此经济高效且易于操作。
 
-我们使用 Loki 将多个使用 k8s 布署的 TiDB 集群的日志进行统一收集，并使用 Grafana 来查询、搜索和显示收集的日志。
+我们使用 Loki 将多个在 k8s 上布署的 TiDB 集群的日志进行统一收集，并使用 Grafana 来查询、搜索和显示收集的日志。
 
 Grafana 为了支持对 Loki 日志的查询及显示，提供了两种插件：
 
@@ -81,6 +81,41 @@ import { convertToWebSocketUrl } from 'app/core/utils/explore';
 
 继续看 grafana 的文档，看看能不能找出点什么线索。突然看到一个方法名：[getDataSourceSrv()](https://grafana.com/docs/grafana/latest/packages_api/runtime/getdatasourcesrv/)，大意是说可以和其它插件进行通信，再仔细看看，通过 DataSourceSrv 接口的 [get()](https://grafana.com/docs/grafana/latest/packages_api/runtime/datasourcesrv/#get-method) 方法，可以得到其它插件的实例，那岂不是可以直接调用其它插件的方法？
 
-如果可行的话，那么我们就可以自己写一个很轻量的 DataSource plugin 了，这个 plugin 只负责在 Explore 页面支持选择租户，集群等信息，然后生成查询表达式，接着直接调用 Loki 插件的查询方法来获取日志结果。
+如果可行的话，那么我们就可以自己写一个很轻量的 DataSource plugin 了，这个 plugin 只负责在 Explore 页面支持选择租户，集群等信息，然后生成查询表达式，接着直接调用 Loki 插件的查询方法来获取日志结果。而且，甚至获取租户列表，集群列表这些信息我们也不需要手动实现，可以直接调用 promethues 插件的方法来得到。
 
 简单验证了一下，可路可行，而且简单多了。
+
+## 开发过程
+
+### 阅读官方 tutorial
+
+[Build a data source plugin](https://grafana.com/tutorials/build-a-data-source-plugin/#1)
+
+我的个人习惯，先照着官方教程完整走一遍流程。
+
+### 环境搭建
+
+照着上面的 tutorial，基本上就把环境搭建起来了，并能跑通一个简单的 data source plugin 了，我们接下来就在它的基础上进行修改。
+
+我选择了使用 docker 把 grafana 跑起来，假设我的 grafana plugins 目录是 `/Users/baurine/Codes/Personal/grafana-plugins`。
+
+```shell
+docker run -d -p 3000:3000 -v /Users/baurine/Codes/Personal/grafana-plugins:/var/lib/grafana/plugins --name=grafana grafana/grafana:7.4.0
+```
+
+另外，因为我们的插件要调用 prometheus 和 loki 插件的方法，因此要先把 prometheus 和 loki 的服务也跑起来，这两个服务已经在云上的 k8s 上运行，我们在本地调试时需要在本地做一个端口转发，比如：
+
+```
+kubectl port-forward svc/thanos-query 9090:9090 -n monitoring
+kubectl port-forward svc/loki 3100:3100 -n logging
+```
+
+因此，我们在本地访问 `http://localhost:9090` 和 `http://localhost:3100` 就相当于访问远端的 promethues 和 loki 了。
+
+接下来，我们要在 grafana 中添加 prometheus 和 loki 两个 data source。这里会遇到一个小问题，我们是在 host 中做了端口转发，但 grafana 是运行在 docker 容器里的，在设置 prometheus data source 的 URL 时，如果我们填写 `http://localhost:9090` 那访问的会是 docker 容器的 9090 端口，而不是 host 的 9090 端口。怎么能在容器里访问到 host 呢，答案是将 localhost 改成 [`host.docker.internal`](https://stackoverflow.com/questions/24319662/from-inside-of-a-docker-container-how-do-i-connect-to-the-localhost-of-the-mach)。
+
+![grafana-prom-ds-config](./assets/grafana-prom-ds-config.png)
+
+![grafana-loki-ds-config](./assets/grafana-loki-ds-config.png)
+
+### 
