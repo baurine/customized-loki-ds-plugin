@@ -87,14 +87,19 @@ export function ExploreQueryEditor(props: Props) {
         setSelectedTenant(tenantOptions[0]);
       }
     }
-    try {
-      setLoadingTenant(true);
-      queryTenants();
-    } catch (err) {
-      console.log(err);
-    } finally {
-      setLoadingTenant(false);
+
+    async function fetch() {
+      try {
+        setLoadingTenant(true);
+        await queryTenants();
+      } catch (err) {
+        console.log(err);
+      } finally {
+        setLoadingTenant(false);
+      }
     }
+
+    fetch();
   }, [datasource]);
 
   useEffect(() => {
@@ -136,14 +141,18 @@ export function ExploreQueryEditor(props: Props) {
       }
     }
 
-    try {
-      setLoadingCluster(true);
-      queryClusters();
-    } catch (err) {
-      console.log(err);
-    } finally {
-      setLoadingCluster(false);
+    async function fetch() {
+      try {
+        setLoadingCluster(true);
+        await queryClusters();
+      } catch (err) {
+        console.log(err);
+      } finally {
+        setLoadingCluster(false);
+      }
     }
+
+    fetch();
   }, [datasource, selectedTenant]);
 
   useEffect(() => {
@@ -180,14 +189,18 @@ export function ExploreQueryEditor(props: Props) {
       }
     }
 
-    try {
-      setLoadingPod(true);
-      queryPods();
-    } catch (err) {
-      console.log(err);
-    } finally {
-      setLoadingPod(false);
+    async function fetch() {
+      try {
+        setLoadingPod(true);
+        await queryPods();
+      } catch (err) {
+        console.log(err);
+      } finally {
+        setLoadingPod(false);
+      }
     }
+
+    fetch();
   }, [datasource, selectedCluster]);
 
   const runQueryRef = useRef<() => void>();
