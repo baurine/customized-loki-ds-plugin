@@ -1,4 +1,4 @@
-# 增强 Grafana Loki Data Source Plugin
+# 增强 Grafana Loki Data Source Plugin 的 Explore 功能
 
 ## 背景介绍
 
@@ -35,7 +35,9 @@ Grafana 的插件有三种：
 
 ![grafana-loki-panel](./assets/grafana-loki-panel.png)
 
-为了方便切换查看不同集群的日志，我们添加了一些选择不同租户，不同集群的 variables。但这些 variables 并不是来自 loki，而是来自 prometheus。这也很好理解，因为对这些集群，我们使用 prometheus 收集 metrics，使用 loki 收集 logs。
+(_谌误：图中 Varaibles 应为 Variables_)
+
+为了方便切换查看不同集群的日志，我们添加了一些选择不同租户，不同集群的 Variables。但这些 Variables 并不是来自 Loki，而是来自 Prometheus。这也很好理解，因为对这些集群，我们使用 Prometheus 收集 metrics，使用 Loki 收集 logs。
 
 但是，此处的 Logs panel 的功能非常有限，并不能很好地满足我们的日常需求，比如查看某条日志的前后几条相邻的日志，查看某条日志更多的标签。这时，我们不得不点击看板下的 "Explore" 按钮跳转到 Explore 页面。
 
@@ -57,7 +59,7 @@ Grafana 的 Explore 功能有点类似 playground，你可以输入任意查询�
 
 **于是我们想，能不能把这两者的优点结合起来呀，也就是说，可以在 Loki 的 Explore 页面中支持选择租户，选择集群，然后生成查询语句 (而不是完全自己手动输入) 进行查询。**
 
-查看了一下 grafana 的开发文档，看到有说可以对 Explore 页面进行扩展的能力 - [Add support for Explore queries](https://grafana.com/docs/grafana/latest/developers/plugins/add-support-for-explore-queries/)，于是决定一试。
+查看了一下 Grafana 的开发文档，看到有说可以对 Explore 页面进行扩展的能力 - [Add support for Explore queries](https://grafana.com/docs/grafana/latest/developers/plugins/add-support-for-explore-queries/)，于是决定一试。
 
 ## 方案选择
 
@@ -65,7 +67,7 @@ Grafana 的 Explore 功能有点类似 playground，你可以输入任意查询�
 
 那很自然就想到，那我们就来修改 Loki DataSource Plugin 的代码呗，它的代码是开源的嘛。我们可以把它的代码从 grafana 中复制一份出来，然后修改成一个自己的版本。(具体目录是在 grafana repo 的 [public/app/plugins/datasource/loki](https://github.com/grafana/grafana/tree/8f691115bc/public/app/plugins/datasource/loki))
 
-初步试了一下失败了，复制出来 build 不了。主要原因是因为这个 plugin 是 grafana 内置的，所以没有完全解耦，它直接调用了 grafana 本身的一些代码，甚至是 prometheus datasource plugin 的一些代码。
+初步试了一下失败了，复制出来 build 不了。主要原因是因为这个 plugin 是 Grafana 内置的，所以没有完全解耦，它直接调用了 Grafana 本身的一些代码，甚至是 Prometheus datasource plugin 的一些代码。
 
 ```ts
 // https://github.com/grafana/grafana/blob/8f691115bc2be265932053686eacd5fec5cf21b5/public/app/plugins/datasource/loki/datasource.ts#L29-L31
@@ -77,9 +79,9 @@ import { convertToWebSocketUrl } from 'app/core/utils/explore';
 
 此路不通甚至有点绝望。
 
-继续看 grafana 的文档，看看能不能找出点什么线索。突然看到一个方法名：[getDataSourceSrv()](https://grafana.com/docs/grafana/latest/packages_api/runtime/getdatasourcesrv/)，大意是说可以和其它插件进行通信，再仔细看看，通过 DataSourceSrv 接口的 [get()](https://grafana.com/docs/grafana/latest/packages_api/runtime/datasourcesrv/#get-method) 方法，可以得到其它插件的实例，那岂不是可以直接调用其它插件的方法？
+继续看 Grafana 的文档，看看能不能找出点什么线索。突然看到一个方法名：[getDataSourceSrv()](https://grafana.com/docs/grafana/latest/packages_api/runtime/getdatasourcesrv/)，大意是说可以和其它插件进行通信，再仔细看看，通过 DataSourceSrv 接口的 [get()](https://grafana.com/docs/grafana/latest/packages_api/runtime/datasourcesrv/#get-method) 方法，可以得到其它插件的实例，那岂不是可以直接调用其它插件的方法？
 
-如果可行的话，那么我们就可以自己写一个很轻量的 DataSource plugin 了，这个 plugin 只负责在 Explore 页面支持选择租户，集群等信息，然后生成查询表达式，接着直接调用 Loki 插件的查询方法来获取日志结果。而且，甚至获取租户列表，集群列表这些信息我们也不需要手动实现，可以直接调用 promethues 插件的方法来得到。
+如果可行的话，那么我们就可以自己写一个很轻量的 DataSource plugin 了，这个 plugin 只负责在 Explore 页面支持选择租户，集群等信息，然后生成查询表达式，接着直接调用 Loki 插件的查询方法来获取日志结果。而且，甚至获取租户列表，集群列表这些信息我们也不需要手动实现，可以直接调用 Promethues 插件的方法来得到。
 
 简单验证了一下，可路可行，而且简单多了。
 
@@ -93,24 +95,24 @@ import { convertToWebSocketUrl } from 'app/core/utils/explore';
 
 ### 环境搭建
 
-照着上面的 tutorial，基本上就把环境搭建起来了，并能跑通一个简单的 data source plugin 了，我们接下来就在它的基础上进行修改。
+照着上面的 tutorial，基本上就把环境搭建起来了，并能跑通一个简单的示例 data source plugin 了，我们接下来就在它的基础上进行修改。
 
-我选择了使用 docker 把 grafana 跑起来，假设我的 grafana plugins 目录是 `/Users/baurine/Codes/Personal/grafana-plugins`。
+我选择了使用 docker 把 Grafana 跑起来，假设我的 Grafana plugins 目录是 `/Users/baurine/Codes/Personal/grafana-plugins`。
 
 ```shell
 docker run -d -p 3000:3000 -v /Users/baurine/Codes/Personal/grafana-plugins:/var/lib/grafana/plugins --name=grafana grafana/grafana:7.4.0
 ```
 
-另外，因为我们的插件要调用 prometheus 和 loki 插件的方法，因此要先把 prometheus 和 loki 的服务也跑起来，这两个服务已经在云上的 k8s 上运行，我们在本地调试时需要在本地做一个端口转发，比如：
+另外，因为我们的插件要调用 Prometheus 和 Loki 插件的方法，因此要先把 Prometheus 和 Loki 的服务也跑起来，这两个服务已经在云上的 k8s 上运行，我们在本地调试时需要在本地做一个端口转发，比如：
 
 ```
 kubectl port-forward svc/thanos-query 9090:9090 -n monitoring
 kubectl port-forward svc/loki 3100:3100 -n logging
 ```
 
-因此，我们在本地访问 `http://localhost:9090` 和 `http://localhost:3100` 就相当于访问远端的 promethues 和 loki 了。
+因此，我们在本地访问 `http://localhost:9090` 和 `http://localhost:3100` 就相当于访问远端的 Promethues 和 Loki 了。
 
-接下来，我们要在 grafana 中添加 prometheus 和 loki 两个 data source。这里会遇到一个小问题，我们是在 host 中做了端口转发，但 grafana 是运行在 docker 容器里的，在设置 prometheus data source 的 URL 时，如果我们填写 `http://localhost:9090` 那访问的会是 docker 容器的 9090 端口，而不是 host 的 9090 端口。怎么能在容器里访问到 host 呢，答案是将 localhost 改成 `host.docker.internal` ([stackoverflow answer](https://stackoverflow.com/questions/24319662/from-inside-of-a-docker-container-how-do-i-connect-to-the-localhost-of-the-mach))。
+接下来，我们要在 Grafana 中添加 Prometheus 和 Loki 两个 data source。这里会遇到一个小问题，我们是在 host 中做了端口转发，但 Grafana 是运行在 docker 容器里的，在设置 Prometheus data source 的 URL 时，如果我们填写 `http://localhost:9090` 那访问的会是 docker 容器的 9090 端口，而不是 host 的 9090 端口。怎么能在容器里访问到 host 呢，答案是将 localhost 改成 `host.docker.internal` ([stackoverflow answer](https://stackoverflow.com/questions/24319662/from-inside-of-a-docker-container-how-do-i-connect-to-the-localhost-of-the-mach))。
 
 ![grafana-prom-ds-config](./assets/grafana-prom-ds-config.png)
 
@@ -118,10 +120,10 @@ kubectl port-forward svc/loki 3100:3100 -n logging
 
 ### 实现 query() 方法
 
-从 tutorial 里得知，实现 data source plugin，最关键是要实现 DataSourceApi 接口的 query() 方法。它负责从真实的服务请求数据 (实际是委托 grafana 去请求)，然后将结果转换成 grafana 约定的格式 (即 DataFrame)。这些复杂的工作都已经由 Loki data source plugin 完成了，我们的 query() 方法只需要简单地转发给 loki 插件去处理。具体代码如下：
+从 tutorial 里得知，实现 data source plugin，最关键是要实现 DataSourceApi 接口的 `query()` 方法。它负责从真实的服务请求数据 (实际是委托 grafana 去请求)，然后将结果转换成 grafana 约定的格式 (即 DataFrame)。这些复杂的工作都已经由 Loki data source plugin 完成了，我们的 `query()` 方法只需要简单地转发给 Loki 插件去处理。具体代码如下：
 
 ```ts
-// datasource.ts
+// src/datasource.ts
 export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
   lokiDS: DataSourceApi | null = null;
   // ...
@@ -137,7 +139,7 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
 }
 ```
 
-注意，query() 方法的参数是 `DataQueryRequest<TQuery>` 类型的对象，对于 Loki data source plugin，通过查看它的源码得知，它的 query() 方法的参数是 `DataQueryRequest<LokiQuery>` 类型。
+注意，`query()` 方法的参数是 `DataQueryRequest<TQuery>` 类型的对象，对于 Loki data source plugin，通过查看它的源码得知，它的 `query()` 方法的参数是 `DataQueryRequest<LokiQuery>` 类型。
 
 LokiQuery 定义如下：
 
@@ -165,15 +167,15 @@ export interface MyQuery extends DataQuery {
 }
 ```
 
-接下来的问题就是我们怎么来拿到这个 `this.lokiDS`，即 loki data source plugin 的实例了。
+接下来的问题就是我们怎么来拿到这个 `this.lokiDS`，即 Loki data source plugin 的实例了。
 
 根据文档，我们可以用 `getDataSourceSrv().get(dataSourceName)` 来拿到其它的 data source 实例，比如上面我们添加 loki data source 时填定的 name 是 `DefLoki`，那就可以通过 `getDataSourceSrv().get("DefLoki")` 来获取。
 
-但是，我们不能 hard code，而且 data source 的 name 也是可以被修改的。所以问题转换成，怎么动态拿到 loki data source 的 name 呢？
+但是，我们不能 hard code，而且 data source 的 name 也是可以被修改的。所以问题转换成，怎么动态拿到 Loki data source 的 name 呢？
 
-这个问题，我们可以通过 ConfigEditor 来解决。我们让用户在添加该 data source，指定所要使用的 loki data source，我们记下它的 uid (data source 的 name 可以修改，但 uid 不会变)，这个值会被 grafana 持久化。之后我们再用 uid 获取对应 data source 的 name，再通过 name 来获取 data source 的实例。(疑惑，为啥 grafana 没有提供通过 uid 直接拿到 data source 实例的方法呢？)
+这个问题，我们可以通过 ConfigEditor 来解决。我们让用户在添加该 data source，指定所要使用的 Loki data source，我们记下它的 uid (data source 的 name 可以修改，但 uid 不会变)，这个值会被 Grafana 持久化。之后我们再用 uid 获取对应 data source 的 name，再通过 name 来获取 data source 的实例。(疑惑，为啥 Grafana 没有提供通过 uid 直接拿到 data source 实例的方法呢？)
 
-另外，我们后面还需要获取 prometheus data source 的实例，所以，我们在 ConfigEditor 中也让用户指定 prometheus data source。
+另外，我们后面还需要获取 Prometheus data source 的实例，所以，我们在 ConfigEditor 中也让用户指定 Prometheus data source。
 
 最终效果如下：
 
@@ -183,7 +185,7 @@ export interface MyQuery extends DataQuery {
 
 ConfigEditor 是用来给用户在添加 data source 进行配置的组件，比如设置服务源的 URL。
 
-对于我们这个 plugin，我们所要做的就是在 Config 界面，获取用户所有添加的 data source，供用户选择目标 prometheus 和 loki data source。
+对于我们这个 plugin，我们所要做的就是在 Config 界面，获取用户所有添加的 data source，供用户选择目标 Prometheus 和 Loki data source。
 
 Config 的选项值会被 grafana 保存在 MyDataSourceOptions 对象中，修改它的定义：
 
@@ -195,7 +197,7 @@ export interface MyDataSourceOptions extends DataSourceJsonData {
 }
 ```
 
-然后在 ConfigEditor 组件中，获取 data source 列表，用 Select 组件供用户选择：
+然后在 ConfigEditor 组件中，获取 data source 列表 (使用 `DataSourceSrv.getList()` 方法)，用 Select 组件供用户选择：
 
 ```tsx
 // src/ConfigEditor.tsx
@@ -260,7 +262,7 @@ export function ConfigEditor(props: Props) {
 }
 ```
 
-当用户在 Config 界面点击 "Save & Test" 按钮时，它会调用 DataSourceApi 的 testDataSource() 方法，我们需要来实现这个方法。也很简单，先判断相应的值为不为空，如果不为空，则找到对应的 data source 实例，调用各实例的 testDataSource() 方法即可。
+当用户在 Config 界面点击 "Save & Test" 按钮时，它会调用 DataSourceApi 的 `testDataSource()` 方法，我们需要来实现这个方法。也很简单，先判断相应的值为不为空，如果不为空，则找到对应的 data source 实例，调用各实例的 `testDataSource()` 方法即可。
 
 ```ts
 // src/datasource.ts
@@ -312,7 +314,70 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
 
 最后，我们就可以来扩展 Loki 的 Explore 页面功能了。
 
+在 Loki 自己实现的 Explore 界面上，仅提供了选择 Log labels 和手动输入查询表达式的功能，如下所示：
 
+![grafana-loki-explore-default](./assets/grafana-loki-explore-default.png)
 
+我们需要实现成可以选择租户，集群等信息，如下所示：
 
+![grafana-loki-explore-extend](./assets/grafana-loki-explore-extend.png)
 
+### 实现 ExploreQueryEditor
+
+上述扩展可以通过自定义 ExploreQueryEditor 实现。这里的核心在于如何获取租户信息列表，集群信息列表等信息。
+
+这些信息的获取跟看板上 Variables 的获取逻辑是相似的。
+
+这些 Variables 是通过 Prometheus 取回来的，通过分析得知，是请求了 Prometheus 的 `/series?match[]=xxx` 接口。我们也可以手动构造这些请求，但通过查阅了 Grafana 的文档 ([Add support for query variables to your data source](https://grafana.com/docs/grafana/latest/developers/plugins/add-support-for-variables/#add-support-for-query-variables-to-your-data-source)) 得知，有更简单的办法，Grafana 将获取 Variables 的逻辑抽象成了 `metricFindQuery()` 方法。因此我们只要调用 Prometheus data source 的 `metricFindQuery()` 方法即可。
+
+以获取租户列表为例：
+
+```tsx
+// src/ExploreQueryEditor.tsx
+useEffect(() => {
+  async function queryTenants() {
+    const promDS = await datasource.getPromDS();
+    const tenantsRes = await promDS.metricFindQuery!('dbaas_tenant_info{status="active"}');
+    const tenaneIdSet = new Set<string>();
+    const tenantOptions: SelectableValue[] = [];
+    tenantsRes.forEach(res => {
+      const m = res.text.match(/.*name="([^"]*).*,tenant="([^"]*).*/);
+      if (m) {
+        const tenantName = m[1];
+        const tenantId = m[2];
+        if (!tenaneIdSet.has(tenantId)) {
+          tenaneIdSet.add(tenantId);
+          tenantOptions.push({ value: tenantId, label: tenantName, description: tenantId });
+        }
+      }
+    });
+    tenantOptions.sort((a, b) => {
+      if (a.label! > b.label!) {
+        return 1;
+      } else if (a.label === b.label) {
+        return a.value > b.value ? 1 : -1;
+      } else {
+        return -1;
+      }
+    });
+    setTenantOptions(tenantOptions);
+    if (tenantOptions.length > 0) {
+      setSelectedTenant(tenantOptions[0]);
+    }
+  }
+  try {
+    setLoadingTenant(true);
+    await queryTenants();
+  } catch (err) {
+    console.log(err);
+  } finally {
+    setLoadingTenant(false);
+  }
+}, [datasource]);
+```
+
+显示效果如下：
+
+![grafana-customized-loki-tenants](./assets/grafana-customized-loki-tenants.png)
+
+### 实现 `Show context`
