@@ -365,14 +365,7 @@ useEffect(() => {
       setSelectedTenant(tenantOptions[0]);
     }
   }
-  try {
-    setLoadingTenant(true);
-    await queryTenants();
-  } catch (err) {
-    console.log(err);
-  } finally {
-    setLoadingTenant(false);
-  }
+  queryTenants();
 }, [datasource]);
 ```
 
@@ -381,3 +374,130 @@ useEffect(() => {
 ![grafana-customized-loki-tenants](./assets/grafana-customized-loki-tenants.png)
 
 ### 实现 `Show context`
+
+如此操作之后，发现能成功地显示相应的查询表达式的 logs 了，但是，最重要的 "Show context" 按钮并没有出现。
+
+![grafana-customized-loki-no-show-context](./assets/grafana-customized-loki-no-show-context.png)
+
+真可谓是 "一顿操作猛如虎，结果发现原地杵"。
+
+一番探索之后，发现是因为自身插件没有实现 `showContextToggle()` 这个方法。加上即可，直接交给 Loki data source 处理，顺便把获取某条日志前后相邻日志的方法也一并加上。
+
+```ts
+// src/datasource.ts
+export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
+  // ...
+  showContextToggle(row?: LogRowModel) {
+    return this.lokiDS!.showContextToggle!(row);
+  }
+
+  getLogRowContext = (row: LogRowModel, options?: any) => {
+    return this.lokiDS!.getLogRowContext!(row, options);
+  };
+}
+```
+
+![grafana-customized-loki-show-context](./assets/grafana-customized-loki-show-context.png)
+
+### 添加/移除 filter
+
+在 Loki data source 的 Explore 页面中，支持某条 log 的详情中，点击放大和缩小图标来添加 filter。
+
+![grafana-loki-filter](./assets/grafana-loki-filter.png)
+
+点击放大图标时，会添加一个 `label=value` 的 filter，点击缩小图标时，会添加一个 `label!=value` 的 filter。嗯，两种操作都是添加，并没有移除操作，不是很方便。
+
+在我们的插件中，添加了移除某个 filter 的操作。具体实现如下。
+
+第一步，实现 `modifyQuery()` 方法，用来接收用户点击放大和缩小图标的事件。
+
+```ts
+// src/datasource.ts
+export const ADD_FILTER_EVENT = 'customized-loki-add-filter';
+
+export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
+  // ...
+  modifyQuery(query: MyQuery, action: any): MyQuery {
+    let filter = '';
+    switch (action.type) {
+      case 'ADD_FILTER': {
+        filter = `${action.key}="${action.value}"`;
+        break;
+      }
+      case 'ADD_FILTER_OUT': {
+        filter = `${action.key}!="${action.value}"`;
+        break;
+      }
+      default:
+        break;
+    }
+    if (filter !== '') {
+      // send event
+      const event = new CustomEvent(ADD_FILTER_EVENT, { detail: filter });
+      document.dispatchEvent(event);
+    }
+    // hack, set the expr to empty, to prevent the meaningless auto query
+    // return query
+    return { ...query, expr: '' };
+  }
+}
+```
+
+我们在这个方法里把生成的 filter 通过 CustomEvent 发送出去，然后在 ExploreQueryEditor 组件中接收并进一步处理。
+
+第二步，在 ExploreQueryEditor 中接收并进一步处理。
+
+```tsx
+// src/ExploreQueryEditor.tsx
+export function ExploreQueryEditor(props: Props) {
+  // ...
+  const [filters, setFilters] = useState<string[]>([]);
+
+  useEffect(() => {
+    function addFilter(event: Event) {
+      const filter = (event as CustomEvent).detail;
+      if (filters.indexOf(filter) < 0) {
+        setFilters(filters.concat(filter));
+        setTimeout(() => {
+          runQueryRef.current!();
+        }, 300);
+      }
+    }
+    document.addEventListener(ADD_FILTER_EVENT, addFilter);
+    return () => document.removeEventListener(ADD_FILTER_EVENT, addFilter);
+  }, [filters]);
+}
+```
+
+我们把这些额外的 filter 存在 filters 数组中，并用一个 TagList 来显示，当用户点击某个 tag 时，则从 filters 中移除它。
+
+```tsx
+// src/ExploreQueryEditor.tsx
+export function ExploreQueryEditor(props: Props) {
+  // ...
+  const [filters, setFilters] = useState<string[]>([]);
+
+  const onFilterClick = (name: string) => {
+    // remove filter
+    setFilters(filters.filter(f => f !== name));
+    setTimeout(() => {
+      runQueryRef.current!();
+    }, 300);
+  };
+
+  return (
+    <div>
+      {/* ... */}
+      <InlineField label="Filters" className="filters">
+        <TagList tags={filters} className="tags" onClick={onFilterClick} />
+      </InlineField>
+    </div>
+  );
+}
+```
+
+显示效果如下：
+
+![grafana-customized-loki-filters](./assets/grafana-customized-loki-filters.png)
+
+All done!
