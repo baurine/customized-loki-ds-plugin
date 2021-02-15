@@ -1,7 +1,5 @@
 # 增强 Grafana Loki Data Source Plugin
 
-(先暂时简单的记个流水账)
-
 ## 背景介绍
 
 [Loki](https://grafana.com/oss/loki/) 是 Grafana 团队开发的一款水平可扩展，高可用性，多租户的日志聚合系统。它从 Prometheus 受到启发，"Like Prometheus, but for logs"，它不为日志内容编制索引，而是为每个日志流编制一组标签，因此经济高效且易于操作。
@@ -10,8 +8,8 @@
 
 Grafana 为了支持对 Loki 日志的查询及显示，提供了两种插件：
 
-1. Panel Plugin - Logs，用来显示日志
 1. DataSource Plugin - Loki，用来从 Loki 服务中查询日志
+1. Panel Plugin - Logs，用来显示日志
 
 ![grafana-plugins-logs](./assets/grafana-plugins-logs.png)
 
@@ -39,7 +37,7 @@ Grafana 的插件有三种：
 
 为了方便切换查看不同集群的日志，我们添加了一些选择不同租户，不同集群的 variables。但这些 variables 并不是来自 loki，而是来自 prometheus。这也很好理解，因为对这些集群，我们使用 prometheus 收集 metrics，使用 loki 收集 logs。
 
-但是，Logs panel 的功能非常有限，并不能很好地满足我们的日常需求，比如查看某条日志的前后几条相邻的日志，查看某条日志更多的标签。这时，我们不得不点击看板下的 "Explore" 按钮跳转到 Explore 页面。
+但是，此处的 Logs panel 的功能非常有限，并不能很好地满足我们的日常需求，比如查看某条日志的前后几条相邻的日志，查看某条日志更多的标签。这时，我们不得不点击看板下的 "Explore" 按钮跳转到 Explore 页面。
 
 ![grafana-panel-to-explore](./assets/grafana-panel-to-explore.png)
 
@@ -112,10 +110,209 @@ kubectl port-forward svc/loki 3100:3100 -n logging
 
 因此，我们在本地访问 `http://localhost:9090` 和 `http://localhost:3100` 就相当于访问远端的 promethues 和 loki 了。
 
-接下来，我们要在 grafana 中添加 prometheus 和 loki 两个 data source。这里会遇到一个小问题，我们是在 host 中做了端口转发，但 grafana 是运行在 docker 容器里的，在设置 prometheus data source 的 URL 时，如果我们填写 `http://localhost:9090` 那访问的会是 docker 容器的 9090 端口，而不是 host 的 9090 端口。怎么能在容器里访问到 host 呢，答案是将 localhost 改成 [`host.docker.internal`](https://stackoverflow.com/questions/24319662/from-inside-of-a-docker-container-how-do-i-connect-to-the-localhost-of-the-mach)。
+接下来，我们要在 grafana 中添加 prometheus 和 loki 两个 data source。这里会遇到一个小问题，我们是在 host 中做了端口转发，但 grafana 是运行在 docker 容器里的，在设置 prometheus data source 的 URL 时，如果我们填写 `http://localhost:9090` 那访问的会是 docker 容器的 9090 端口，而不是 host 的 9090 端口。怎么能在容器里访问到 host 呢，答案是将 localhost 改成 `host.docker.internal` ([stackoverflow answer](https://stackoverflow.com/questions/24319662/from-inside-of-a-docker-container-how-do-i-connect-to-the-localhost-of-the-mach))。
 
 ![grafana-prom-ds-config](./assets/grafana-prom-ds-config.png)
 
 ![grafana-loki-ds-config](./assets/grafana-loki-ds-config.png)
 
-### 
+### 实现 query() 方法
+
+从 tutorial 里得知，实现 data source plugin，最关键是要实现 DataSourceApi 接口的 query() 方法。它负责从真实的服务请求数据 (实际是委托 grafana 去请求)，然后将结果转换成 grafana 约定的格式 (即 DataFrame)。这些复杂的工作都已经由 Loki data source plugin 完成了，我们的 query() 方法只需要简单地转发给 loki 插件去处理。具体代码如下：
+
+```ts
+// datasource.ts
+export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
+  lokiDS: DataSourceApi | null = null;
+  // ...
+  query(options: DataQueryRequest<MyQuery>): Promise<DataQueryResponse> | Observable<DataQueryResponse> {
+    if (this.lokiDS === null) {
+      return of({
+        data: [],
+        state: LoadingState.Done,
+      });
+    }
+    return this.lokiDS.query(options);
+  }
+}
+```
+
+注意，query() 方法的参数是 `DataQueryRequest<TQuery>` 类型的对象，对于 Loki data source plugin，通过查看它的源码得知，它的 query() 方法的参数是 `DataQueryRequest<LokiQuery>` 类型。
+
+LokiQuery 定义如下：
+
+```ts
+// https://github.com/grafana/grafana/blob/8f691115bc2be265932053686eacd5fec5cf21b5/public/app/plugins/datasource/loki/types.ts#L25-L35
+export interface LokiQuery extends DataQuery {
+  expr: string;
+  query?: string;
+  format?: string;
+  reverse?: boolean;
+  legendFormat?: string;
+  valueWithRefId?: boolean;
+  maxLines?: number;
+  range?: boolean;
+  instant?: boolean;
+}
+```
+
+这里面最重要的字段是 expr，是查询表达式字符串，其它属性可以先忽略，因此我们把 MyQuery 类型的定义改成和 LokiQuery 匹配：
+
+```ts
+// src/types.ts
+export interface MyQuery extends DataQuery {
+  expr: string; // keep same as the loki data source
+}
+```
+
+接下来的问题就是我们怎么来拿到这个 `this.lokiDS`，即 loki data source plugin 的实例了。
+
+根据文档，我们可以用 `getDataSourceSrv().get(dataSourceName)` 来拿到其它的 data source 实例，比如上面我们添加 loki data source 时填定的 name 是 `DefLoki`，那就可以通过 `getDataSourceSrv().get("DefLoki")` 来获取。
+
+但是，我们不能 hard code，而且 data source 的 name 也是可以被修改的。所以问题转换成，怎么动态拿到 loki data source 的 name 呢？
+
+这个问题，我们可以通过 ConfigEditor 来解决。我们让用户在添加该 data source，指定所要使用的 loki data source，我们记下它的 uid (data source 的 name 可以修改，但 uid 不会变)，这个值会被 grafana 持久化。之后我们再用 uid 获取对应 data source 的 name，再通过 name 来获取 data source 的实例。(疑惑，为啥 grafana 没有提供通过 uid 直接拿到 data source 实例的方法呢？)
+
+另外，我们后面还需要获取 prometheus data source 的实例，所以，我们在 ConfigEditor 中也让用户指定 prometheus data source。
+
+最终效果如下：
+
+![grafana-customized-loki-config](./assets/grafana-customized-loki-config.png)
+
+### 实现 ConfigEditor
+
+ConfigEditor 是用来给用户在添加 data source 进行配置的组件，比如设置服务源的 URL。
+
+对于我们这个 plugin，我们所要做的就是在 Config 界面，获取用户所有添加的 data source，供用户选择目标 prometheus 和 loki data source。
+
+Config 的选项值会被 grafana 保存在 MyDataSourceOptions 对象中，修改它的定义：
+
+```ts
+// src/types.ts
+export interface MyDataSourceOptions extends DataSourceJsonData {
+  promDataSourceUid: string;
+  lokiDataSourceUid: string;
+}
+```
+
+然后在 ConfigEditor 组件中，获取 data source 列表，用 Select 组件供用户选择：
+
+```tsx
+// src/ConfigEditor.tsx
+interface Props extends DataSourcePluginOptionsEditorProps<MyDataSourceOptions> {}
+
+export function ConfigEditor(props: Props) {
+  const [dsList, setDsList] = useState<SelectableValue[]>([]);
+  const {
+    options: {
+      id: selfId, // plugin self id
+      jsonData: { promDataSourceUid, lokiDataSourceUid },
+    },
+  } = props;
+
+  useEffect(() => {
+    const dsSrv = getDataSourceSrv();
+    const allDS = dsSrv.getList();
+    const dsList: SelectableValue[] = allDS
+      .filter(ds => ds.uid !== undefined && ds.id !== selfId)
+      .map(ds => ({
+        label: ds.name,
+        value: ds.uid,
+      }));
+    setDsList(dsList);
+  }, [selfId]);
+
+  const onPromDSChange = (v: SelectableValue) => {
+    const { onOptionsChange, options } = props;
+    const jsonData = {
+      ...options.jsonData,
+      promDataSourceUid: v?.value || '',
+    };
+    onOptionsChange({ ...options, jsonData });
+  };
+
+  const onLokiDSChange = (v: SelectableValue) => {
+    const { onOptionsChange, options } = props;
+    const jsonData = {
+      ...options.jsonData,
+      lokiDataSourceUid: v?.value || '',
+    };
+    onOptionsChange({ ...options, jsonData });
+  };
+
+  return (
+    <div className="gf-form-group">
+      <div className="gf-form">
+        <InlineLabel width={16} tooltip="Select a Prometheus DataSource">
+          Prometheus
+        </InlineLabel>
+        <Select isClearable={true} options={dsList} value={promDataSourceUid} onChange={onPromDSChange} width={36} />
+      </div>
+
+      <div className="gf-form">
+        <InlineLabel width={16} tooltip="Select a Loki DataSource">
+          Loki
+        </InlineLabel>
+        <Select isClearable={true} options={dsList} value={lokiDataSourceUid} onChange={onLokiDSChange} width={36} />
+      </div>
+    </div>
+  );
+}
+```
+
+当用户在 Config 界面点击 "Save & Test" 按钮时，它会调用 DataSourceApi 的 testDataSource() 方法，我们需要来实现这个方法。也很简单，先判断相应的值为不为空，如果不为空，则找到对应的 data source 实例，调用各实例的 testDataSource() 方法即可。
+
+```ts
+// src/datasource.ts
+export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
+  // ...
+  async testDatasource() {
+    const {
+      jsonData: { lokiDataSourceUid, promDataSourceUid },
+    } = this.instanceSettings;
+
+    if (!promDataSourceUid) {
+      throw new Error('Promethues datasource is empty!');
+    }
+    if (!lokiDataSourceUid) {
+      throw new Error('Loki datasource is empty!');
+    }
+
+    const dataSourceSrv = getDataSourceSrv();
+    const promDsSetting = dataSourceSrv.getInstanceSettings(promDataSourceUid);
+    if (!promDsSetting) {
+      throw new Error(`Target promethues datasource doesn't exist anymore !`);
+    }
+    const lokiDsSetting = dataSourceSrv.getInstanceSettings(lokiDataSourceUid);
+    if (!lokiDsSetting) {
+      throw new Error(`Target loki datasource doesn't exist anymore !`);
+    }
+
+    const promDs = await dataSourceSrv.get(promDsSetting.name);
+    this.promDS = promDs as any;
+    const promRes = await promDs.testDatasource();
+    if (promRes.status === 'error') {
+      return promRes;
+    }
+
+    const lokiDs = await dataSourceSrv.get(lokiDsSetting.name);
+    this.lokiDS = lokiDs as any;
+    const lokiRes = await lokiDs.testDatasource();
+    if (lokiRes.status === 'error') {
+      return lokiRes;
+    }
+
+    return {
+      status: 'success',
+      message: 'Both prometheus and loki data source are working',
+    };
+  }
+}
+```
+
+最后，我们就可以来扩展 Loki 的 Explore 页面功能了。
+
+
+
+
+
