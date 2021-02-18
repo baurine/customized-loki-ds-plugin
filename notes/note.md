@@ -1,5 +1,7 @@
 # 增强 Grafana Loki Data Source Plugin 的 Explore 功能
 
+> 文中截图皆来自 dev 环境，且日志已脱敏。
+
 ## 背景介绍
 
 [Loki](https://grafana.com/oss/loki/) 是 Grafana 团队开发的一款水平可扩展，高可用性，多租户的日志聚合系统。它从 Prometheus 受到启发，"Like Prometheus, but for logs"，它不为日志内容编制索引，而是为每个日志流编制一组标签，因此经济高效且易于操作。
