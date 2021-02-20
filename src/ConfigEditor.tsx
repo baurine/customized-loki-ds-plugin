@@ -7,7 +7,7 @@ import { MyDataSourceOptions } from './types';
 
 interface Props extends DataSourcePluginOptionsEditorProps<MyDataSourceOptions> {}
 
-export function ConfigEditor(props: Props) {
+export default (props: Props) => {
   const [dsList, setDsList] = useState<SelectableValue[]>([]);
   const {
     options: {
