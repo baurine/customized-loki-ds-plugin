@@ -10,7 +10,7 @@ import './style.css';
 
 export type Props = ExploreQueryFieldProps<DataSource, MyQuery, MyDataSourceOptions>;
 
-export default (props: Props) => {
+export default function ExploreQueryEditor(props: Props) {
   const { query, datasource, onChange, onRunQuery } = props;
 
   const [tenantOptions, setTenantOptions] = useState<SelectableValue[]>([]);
@@ -39,7 +39,7 @@ export default (props: Props) => {
 
   const onFilterClick = (name: string) => {
     // remove filter
-    setFilters(filters.filter(f => f !== name));
+    setFilters(filters.filter((f) => f !== name));
     setTimeout(() => {
       runQueryRef.current!();
     }, 300);
@@ -62,7 +62,7 @@ export default (props: Props) => {
       const tenantsRes = await promDS.metricFindQuery!('dbaas_tenant_info{status="active"}');
       const tenaneIdSet = new Set<string>();
       const tenantOptions: SelectableValue[] = [];
-      tenantsRes.forEach(res => {
+      tenantsRes.forEach((res) => {
         const m = res.text.match(/.*name="([^"]*).*,tenant="([^"]*).*/);
         if (m) {
           const tenantName = m[1];
@@ -115,7 +115,7 @@ export default (props: Props) => {
       const clustersRes = await promDS.metricFindQuery!(`dbaas_tidb_cluster_info{tenant="${selectedTenantId}"}`);
       const clusterIdSet = new Set<string>();
       const clusterOptions: SelectableValue[] = [];
-      clustersRes.forEach(res => {
+      clustersRes.forEach((res) => {
         const m = res.text.match(/.*cluster_id="([^"]*).*,name="([^"]*).*/);
         if (m) {
           const clusterId = m[1];
@@ -170,7 +170,7 @@ export default (props: Props) => {
       );
       const podNames = new Set<string>();
       const podOptions: SelectableValue[] = [];
-      podsRes.forEach(res => {
+      podsRes.forEach((res) => {
         const m = res.text.match(/.*pod="([^"]*).*/);
         if (m) {
           const podName = m[1];
@@ -241,7 +241,7 @@ export default (props: Props) => {
     if (selectedLogType) {
       exprArr.push(`container=~"${selectedLogType.value}"`);
     }
-    filters.forEach(f => exprArr.push(f));
+    filters.forEach((f) => exprArr.push(f));
     const finalExpr = `{${exprArr.join(', ')}} |~ "${search}"`;
     changeQueryRef.current!(finalExpr);
   }, [selectedCluster, selectedPod, selectedLogType, search, filters]);
@@ -289,7 +289,7 @@ export default (props: Props) => {
           />
         </InlineField>
         <InlineField label="Search">
-          <Input value={search} onChange={e => setSearch(e.currentTarget.value)} css="" />
+          <Input value={search} onChange={(e) => setSearch(e.currentTarget.value)} css="" />
         </InlineField>
       </div>
       <QueryField
@@ -305,4 +305,4 @@ export default (props: Props) => {
       </InlineField>
     </div>
   );
-};
+}

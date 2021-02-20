@@ -26,11 +26,11 @@ const LOGQL_EXAMPLES = [
   },
 ];
 
-export default (props: QueryEditorHelpProps) => {
+export default function QueryEditorHelp(props: QueryEditorHelpProps) {
   function renderExpression(expr: string) {
     const { onClickExample } = props;
     return (
-      <div className="cheat-sheet-item__example" onClick={e => onClickExample({ refId: 'A', expr } as DataQuery)}>
+      <div className="cheat-sheet-item__example" onClick={(e) => onClickExample({ refId: 'A', expr } as DataQuery)}>
         <code>{expr}</code>
       </div>
     );
@@ -128,4 +128,4 @@ export default (props: QueryEditorHelpProps) => {
       ))}
     </div>
   );
-};
+}
