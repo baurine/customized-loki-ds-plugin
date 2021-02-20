@@ -259,7 +259,7 @@ export default (props: Props) => {
             value={selectedTenant}
           />
         </InlineField>
-        <InlineField label="Cluster">
+        <InlineField label="Cluster" tooltip="Repond to namespace label">
           <Select
             isLoading={loadingCluster}
             isClearable
@@ -269,7 +269,7 @@ export default (props: Props) => {
             value={selectedCluster}
           />
         </InlineField>
-        <InlineField label="Pod">
+        <InlineField label="Pod" tooltip="Repond to instance label">
           <Select
             isLoading={loadingPod}
             isClearable
@@ -279,7 +279,7 @@ export default (props: Props) => {
             value={selectedPod}
           />
         </InlineField>
-        <InlineField label="LogType">
+        <InlineField label="LogType" tooltip="Repond to container label">
           <Select
             isClearable
             width={16}
