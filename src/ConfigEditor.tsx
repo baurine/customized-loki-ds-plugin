@@ -20,8 +20,8 @@ export function ConfigEditor(props: Props) {
     const dsSrv = getDataSourceSrv();
     const allDS = dsSrv.getList();
     const dsList: SelectableValue[] = allDS
-      .filter(ds => ds.uid !== undefined && ds.id !== selfId)
-      .map(ds => ({
+      .filter((ds) => ds.uid !== undefined && ds.id !== selfId)
+      .map((ds) => ({
         label: ds.name,
         value: ds.uid,
       }));

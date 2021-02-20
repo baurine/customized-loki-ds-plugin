@@ -1,5 +1,4 @@
-// import { Observable, of } from 'rxjs';
-import { Observable, of } from '@grafana/data/node_modules/rxjs';
+import { Observable, of } from 'rxjs';
 
 import {
   DataQueryRequest,
@@ -28,7 +27,7 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
     const dataSourceSrv = getDataSourceSrv();
     const lokiDsSetting = dataSourceSrv.getInstanceSettings(lokiDataSourceUid);
     if (lokiDsSetting) {
-      dataSourceSrv.get(lokiDsSetting.name).then(ds => {
+      dataSourceSrv.get(lokiDsSetting.name).then((ds) => {
         this.lokiDS = ds as any;
       });
     }
@@ -44,7 +43,7 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
     const dataSourceSrv = getDataSourceSrv();
     const promDsSetting = dataSourceSrv.getInstanceSettings(promDataSourceUid);
     if (promDsSetting) {
-      return dataSourceSrv.get(promDsSetting.name).then(ds => {
+      return dataSourceSrv.get(promDsSetting.name).then((ds) => {
         this.promDS = ds as any;
         return ds as any;
       });
