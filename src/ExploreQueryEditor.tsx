@@ -26,7 +26,9 @@ export default function ExploreQueryEditor(props: Props) {
   const [loadingPod, setLoadingPod] = useState(false);
 
   const logTypeOptions: SelectableValue[] = [
-    { value: 'pd|tidb|tikv', label: 'general' },
+    { value: 'tidb', label: 'tidb' },
+    { value: 'tikv', label: 'tikv' },
+    { value: 'pd', label: 'pd' },
     { value: 'slowlog', label: 'slowlog' },
     { value: 'rocksdblog', label: 'rocksdblog' },
     { value: 'raftlog', label: 'raftlog' },
@@ -235,12 +237,22 @@ export default function ExploreQueryEditor(props: Props) {
       // if not select a target cluster, it is expected to return empty logs
       exprArr.push(`namespace="unknown"`);
     }
+
     if (selectedPod) {
       exprArr.push(`instance=~"${selectedPod.value}"`);
     }
-    if (selectedLogType) {
-      exprArr.push(`container=~"${selectedLogType.value}"`);
+
+    let logTypes = '';
+    if (Array.isArray(selectedLogType)) {
+      // when select multiple LogType
+      logTypes = selectedLogType.map((item) => item.value).join('|');
+    } else {
+      logTypes = selectedLogType?.value || '';
     }
+    if (logTypes) {
+      exprArr.push(`container=~"${logTypes}"`);
+    }
+
     filters.forEach((f) => exprArr.push(f));
     const finalExpr = `{${exprArr.join(', ')}} |~ "${search}"`;
     changeQueryRef.current!(finalExpr);
@@ -286,6 +298,7 @@ export default function ExploreQueryEditor(props: Props) {
             onChange={setSelectedLogType}
             options={logTypeOptions}
             value={selectedLogType}
+            isMulti={true}
           />
         </InlineField>
         <InlineField label="Search">
