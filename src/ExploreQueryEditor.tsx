@@ -271,7 +271,7 @@ export default function ExploreQueryEditor(props: Props) {
             value={selectedTenant}
           />
         </InlineField>
-        <InlineField label="Cluster" tooltip="Repond to namespace label">
+        <InlineField label="Cluster" tooltip="Respond to namespace label">
           <Select
             isLoading={loadingCluster}
             isClearable
@@ -281,7 +281,7 @@ export default function ExploreQueryEditor(props: Props) {
             value={selectedCluster}
           />
         </InlineField>
-        <InlineField label="Pod" tooltip="Repond to instance label">
+        <InlineField label="Pod" tooltip="Each pod represents a tidb/tikv/pd instance, respond to instance label">
           <Select
             isLoading={loadingPod}
             isClearable
@@ -291,7 +291,7 @@ export default function ExploreQueryEditor(props: Props) {
             value={selectedPod}
           />
         </InlineField>
-        <InlineField label="LogType" tooltip="Repond to container label">
+        <InlineField label="LogType" tooltip="Aka container name, respond to container label">
           <Select
             isClearable
             width={32}
