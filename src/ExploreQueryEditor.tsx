@@ -305,17 +305,21 @@ export default function ExploreQueryEditor(props: Props) {
           <Input value={search} onChange={(e) => setSearch(e.currentTarget.value)} css="" />
         </InlineField>
       </div>
-      <QueryField
-        portalOrigin="customized-loki"
-        onChange={onQueryChange}
-        onRunQuery={props.onRunQuery}
-        onBlur={onBlur}
-        query={query.expr || ''}
-        placeholder="Enter a query"
-      />
-      <InlineField label="Filters" className="filters">
-        <TagList tags={filters} className="tags" onClick={onFilterClick} />
-      </InlineField>
+      <div className="query-field">
+        <QueryField
+          portalOrigin="customized-loki"
+          onChange={onQueryChange}
+          onRunQuery={props.onRunQuery}
+          onBlur={onBlur}
+          query={query.expr || ''}
+          placeholder="Enter a query"
+        />
+      </div>
+      {filters.length > 0 && (
+        <InlineField label="Filters" className="filters" tooltip="Click the filetr to remove it">
+          <TagList tags={filters} className="tags" onClick={onFilterClick} />
+        </InlineField>
+      )}
     </div>
   );
 }
