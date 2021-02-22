@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.0.4
+
+- Test github action
+
 ## 0.0.3
 
 - Auto publish release
