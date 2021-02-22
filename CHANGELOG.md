@@ -1,5 +1,13 @@
 # Changelog
 
-## 1.0.0 (Unreleased)
+## 0.0.3
 
-Initial release.
+- Auto publish release
+
+## 0.0.2
+
+- Change promDataSourceUid/lokiDataSourceUid to promDataSourceName/lokiDataSourceName
+
+## 0.0.1
+
+First release
