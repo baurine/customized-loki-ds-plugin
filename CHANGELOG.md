@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.0.5
+
+- Support select multiple LogType (aka containers)
+- Hide filter label if there is no filter
+- Adjust layout
+- Refine tooltip
+
 ## 0.0.4
 
 - Test github action
