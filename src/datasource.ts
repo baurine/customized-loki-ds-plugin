@@ -22,10 +22,10 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
     super(instanceSettings);
 
     const {
-      jsonData: { lokiDataSourceUid },
+      jsonData: { lokiDataSourceName },
     } = this.instanceSettings;
     const dataSourceSrv = getDataSourceSrv();
-    const lokiDsSetting = dataSourceSrv.getInstanceSettings(lokiDataSourceUid);
+    const lokiDsSetting = dataSourceSrv.getInstanceSettings(lokiDataSourceName);
     if (lokiDsSetting) {
       dataSourceSrv.get(lokiDsSetting.name).then((ds) => {
         this.lokiDS = ds as any;
@@ -38,10 +38,10 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
       return Promise.resolve(this.promDS);
     }
     const {
-      jsonData: { promDataSourceUid },
+      jsonData: { promDataSourceName },
     } = this.instanceSettings;
     const dataSourceSrv = getDataSourceSrv();
-    const promDsSetting = dataSourceSrv.getInstanceSettings(promDataSourceUid);
+    const promDsSetting = dataSourceSrv.getInstanceSettings(promDataSourceName);
     if (promDsSetting) {
       return dataSourceSrv.get(promDsSetting.name).then((ds) => {
         this.promDS = ds as any;
@@ -63,22 +63,22 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
 
   async testDatasource() {
     const {
-      jsonData: { lokiDataSourceUid, promDataSourceUid },
+      jsonData: { lokiDataSourceName, promDataSourceName },
     } = this.instanceSettings;
 
-    if (!promDataSourceUid) {
+    if (!promDataSourceName) {
       throw new Error('Promethues datasource is empty!');
     }
-    if (!lokiDataSourceUid) {
+    if (!lokiDataSourceName) {
       throw new Error('Loki datasource is empty!');
     }
 
     const dataSourceSrv = getDataSourceSrv();
-    const promDsSetting = dataSourceSrv.getInstanceSettings(promDataSourceUid);
+    const promDsSetting = dataSourceSrv.getInstanceSettings(promDataSourceName);
     if (!promDsSetting) {
       throw new Error(`Target promethues datasource doesn't exist anymore !`);
     }
-    const lokiDsSetting = dataSourceSrv.getInstanceSettings(lokiDataSourceUid);
+    const lokiDsSetting = dataSourceSrv.getInstanceSettings(lokiDataSourceName);
     if (!lokiDsSetting) {
       throw new Error(`Target loki datasource doesn't exist anymore !`);
     }

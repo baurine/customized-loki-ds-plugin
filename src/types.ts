@@ -8,6 +8,6 @@ export interface MyQuery extends DataQuery {
  * These are options configured for each DataSource instance
  */
 export interface MyDataSourceOptions extends DataSourceJsonData {
-  promDataSourceUid: string;
-  lokiDataSourceUid: string;
+  promDataSourceName: string;
+  lokiDataSourceName: string;
 }
