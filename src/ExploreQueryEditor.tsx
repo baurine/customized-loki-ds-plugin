@@ -294,18 +294,18 @@ export default function ExploreQueryEditor(props: Props) {
         <InlineField label="LogType" tooltip="Repond to container label">
           <Select
             isClearable
-            width={16}
+            width={32}
             onChange={setSelectedLogType}
             options={logTypeOptions}
             value={selectedLogType}
             isMulti={true}
           />
         </InlineField>
-        <InlineField label="Search">
-          <Input value={search} onChange={(e) => setSearch(e.currentTarget.value)} css="" />
-        </InlineField>
       </div>
       <div className="query-field">
+        <InlineField label="Search">
+          <Input width={20} value={search} onChange={(e) => setSearch(e.currentTarget.value)} css="" />
+        </InlineField>
         <QueryField
           portalOrigin="customized-loki"
           onChange={onQueryChange}
@@ -314,6 +314,9 @@ export default function ExploreQueryEditor(props: Props) {
           query={query.expr || ''}
           placeholder="Enter a query"
         />
+        <InlineField label="Line limit" style={{ marginLeft: 4 }}>
+          <Input width={8} placeholder="todo" css="" />
+        </InlineField>
       </div>
       {filters.length > 0 && (
         <InlineField label="Filters" className="filters" tooltip="Click the filetr to remove it">

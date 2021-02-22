@@ -6,6 +6,9 @@
 
 .query-field {
   margin-bottom: 4px;
+
+  display: flex;
+  align-items: flex-start;
 }
 
 .tags {
