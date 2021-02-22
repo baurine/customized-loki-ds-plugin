@@ -26,7 +26,9 @@ export default function ExploreQueryEditor(props: Props) {
   const [loadingPod, setLoadingPod] = useState(false);
 
   const logTypeOptions: SelectableValue[] = [
-    { value: 'pd|tidb|tikv', label: 'general' },
+    { value: 'tidb', label: 'tidb' },
+    { value: 'tikv', label: 'tikv' },
+    { value: 'pd', label: 'pd' },
     { value: 'slowlog', label: 'slowlog' },
     { value: 'rocksdblog', label: 'rocksdblog' },
     { value: 'raftlog', label: 'raftlog' },
@@ -235,12 +237,22 @@ export default function ExploreQueryEditor(props: Props) {
       // if not select a target cluster, it is expected to return empty logs
       exprArr.push(`namespace="unknown"`);
     }
+
     if (selectedPod) {
       exprArr.push(`instance=~"${selectedPod.value}"`);
     }
-    if (selectedLogType) {
-      exprArr.push(`container=~"${selectedLogType.value}"`);
+
+    let logTypes = '';
+    if (Array.isArray(selectedLogType)) {
+      // when select multiple LogType
+      logTypes = selectedLogType.map((item) => item.value).join('|');
+    } else {
+      logTypes = selectedLogType?.value || '';
     }
+    if (logTypes) {
+      exprArr.push(`container=~"${logTypes}"`);
+    }
+
     filters.forEach((f) => exprArr.push(f));
     const finalExpr = `{${exprArr.join(', ')}} |~ "${search}"`;
     changeQueryRef.current!(finalExpr);
@@ -259,7 +271,7 @@ export default function ExploreQueryEditor(props: Props) {
             value={selectedTenant}
           />
         </InlineField>
-        <InlineField label="Cluster" tooltip="Repond to namespace label">
+        <InlineField label="Cluster" tooltip="Respond to namespace label">
           <Select
             isLoading={loadingCluster}
             isClearable
@@ -269,7 +281,7 @@ export default function ExploreQueryEditor(props: Props) {
             value={selectedCluster}
           />
         </InlineField>
-        <InlineField label="Pod" tooltip="Repond to instance label">
+        <InlineField label="Pod" tooltip="Each pod represents a tidb/tikv/pd instance, respond to instance label">
           <Select
             isLoading={loadingPod}
             isClearable
@@ -279,30 +291,38 @@ export default function ExploreQueryEditor(props: Props) {
             value={selectedPod}
           />
         </InlineField>
-        <InlineField label="LogType" tooltip="Repond to container label">
+        <InlineField label="LogType" tooltip="Aka container name, respond to container label">
           <Select
             isClearable
-            width={16}
+            width={32}
             onChange={setSelectedLogType}
             options={logTypeOptions}
             value={selectedLogType}
+            isMulti={true}
           />
         </InlineField>
+      </div>
+      <div className="query-field">
         <InlineField label="Search">
-          <Input value={search} onChange={(e) => setSearch(e.currentTarget.value)} css="" />
+          <Input width={20} value={search} onChange={(e) => setSearch(e.currentTarget.value)} css="" />
+        </InlineField>
+        <QueryField
+          portalOrigin="customized-loki"
+          onChange={onQueryChange}
+          onRunQuery={props.onRunQuery}
+          onBlur={onBlur}
+          query={query.expr || ''}
+          placeholder="Enter a query"
+        />
+        <InlineField label="Line limit" style={{ marginLeft: 4 }}>
+          <Input width={8} placeholder="todo" css="" />
         </InlineField>
       </div>
-      <QueryField
-        portalOrigin="customized-loki"
-        onChange={onQueryChange}
-        onRunQuery={props.onRunQuery}
-        onBlur={onBlur}
-        query={query.expr || ''}
-        placeholder="Enter a query"
-      />
-      <InlineField label="Filters" className="filters">
-        <TagList tags={filters} className="tags" onClick={onFilterClick} />
-      </InlineField>
+      {filters.length > 0 && (
+        <InlineField label="Filters" className="filters" tooltip="Click the filetr to remove it">
+          <TagList tags={filters} className="tags" onClick={onFilterClick} />
+        </InlineField>
+      )}
     </div>
   );
 }
