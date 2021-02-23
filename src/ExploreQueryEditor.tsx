@@ -59,7 +59,7 @@ export default function ExploreQueryEditor(props: Props) {
 
   const onLineLimitChange = (event: any) => {
     const str = event.currentTarget.value;
-    const val = parseInt(str.trim());
+    const val = parseInt(str.trim(), 10);
     if (val > 0 && val <= lokiMaxLines) {
       onChange?.({ ...query, maxLines: val });
     }
