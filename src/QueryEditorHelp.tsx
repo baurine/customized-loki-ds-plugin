@@ -1,32 +1,11 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { QueryEditorHelpProps, DataQuery } from '@grafana/data';
 
-const LOGQL_EXAMPLES = [
-  {
-    title: 'Log pipeline',
-    expression: '{container=~"pd|tidb|tikv"} |= "safe" | logfmt | duration > 10s',
-    label:
-      'This query targets the "pd|tidb|tikv" containers, filters logs that contain the word "safe" and parses each log line to extract more labels and filters with them.',
-  },
-  {
-    title: 'Count over time',
-    expression: 'count_over_time({container=~"pd|tidb|tikv"}[5m])',
-    label: 'This query counts all the log lines within the last five minutes for the "pd|tidb|tikv" containers.',
-  },
-  {
-    title: 'Rate',
-    expression: 'rate(({container=~"pd|tidb|tikv"} |= "error" != "timeout")[10s])',
-    label:
-      'This query gets the per-second rate of all non-timeout errors within the last ten seconds for the "pd|tidb|tikv" containers.',
-  },
-  {
-    title: 'Aggregate, count, and group',
-    expression: 'sum(count_over_time({container=~"pd|tidb|tikv"}[5m])) by (instance)',
-    label: 'Get the count of logs during the last five minutes, grouping by instance.',
-  },
-];
+import { DataSource } from './datasource';
 
 export default function QueryEditorHelp(props: QueryEditorHelpProps) {
+  const { datasource } = props;
+
   function renderExpression(expr: string) {
     const { onClickExample } = props;
     return (
@@ -36,96 +15,85 @@ export default function QueryEditorHelp(props: QueryEditorHelpProps) {
     );
   }
 
+  const [clusterId, setClusterId] = useState('1356074555092766720');
+  useEffect(() => {
+    async function queryClusterId() {
+      const myDS = datasource as DataSource;
+      const promDS = await myDS.getPromDS();
+      const clusterIds = await promDS.metricFindQuery!(
+        'label_values(dbaas_tidb_cluster_info{status="normal"},cluster_id)'
+      );
+      if (clusterIds.length > 0) {
+        setClusterId(clusterIds[0].text);
+      }
+    }
+    queryClusterId();
+  }, [datasource]);
+
   return (
     <div>
       <h2>Basic Usage</h2>
       <div className="cheat-sheet-item">
-        <div className="cheat-sheet-item__title">See your logs</div>
+        <div className="cheat-sheet-item__title">To view all TiDB logs</div>
         <div className="cheat-sheet-item__label">
-          Start by selecting Tenant/Cluser/Pod/LogType options, inputing search keywords, it will auto generate the
-          query expression.
+          Select target <b>Tenant</b>, target <b>Cluster</b>, and <code>tidb</code> <b>LogType</b>.
         </div>
+        {renderExpression(`{namespace=~".*${clusterId}", container=~"tidb"}`)}
         <div className="cheat-sheet-item__label">
-          The Cluster option reponds to the <code>namespace</code> label, the Pod option reponds to{' '}
-          <code>instance</code> label, and the LogType option reponds to the <code>container</code> label.
+          To view TiDB logs of an individual TiDB instance, continue to select target <b>Instance</b> which starts with
+          <code>db-tidb-</code>.
         </div>
+        {renderExpression(`{namespace=~".*${clusterId}", container=~"tidb", instance=~"db-tidb-0"}`)}
         <div className="cheat-sheet-item__label">
-          Then, you can modify the expression manually or start querying directly.
+          To search TiDB logs by keywords, input the keywords (for example <code>error</code>) in the <b>Search</b>{' '}
+          input box.
         </div>
-        {renderExpression(
-          `{namespace=~".*1356074555092766720", instance=~"db-pd-0", container=~"pd|tidb|tikv"} |~ "safe"`
-        )}
-        <div>
-          The query expression syntax is defined by{' '}
-          <a href="https://grafana.com/docs/loki/latest/logql/" target="logql" style={{ color: 'blue' }}>
-            Loki LogQL
-          </a>
-          .
-        </div>
+        {renderExpression(`{namespace=~".*${clusterId}", container=~"tidb", instance=~"db-tidb-0"} |~ "error"`)}
       </div>
 
       <div className="cheat-sheet-item">
-        <div className="cheat-sheet-item__title">Log stream selectors</div>
+        <div className="cheat-sheet-item__title">To view all TiKV/PD/TiFlash logs</div>
         <div className="cheat-sheet-item__label">
-          Log stream selectors, aka labels. You can use one or multiple labels. For example:
+          Same as view all TiDB logs, but with <code>tikv</code>, <code>pd</code> and <code>tiflash</code>{' '}
+          <b>LogType</b>, and the target <b>Instance</b> should start with <code>db-tikv-</code>, <code>db-pd-</code>{' '}
+          and <code>db-tiflash-</code>.
         </div>
-        {renderExpression(`{container="slowlog"}`)}
-        {renderExpression(`{container!="slowlog"}`)}
-        {renderExpression(`{namespace=~".*1356074555092766720", container=~"pd|tidb|tikv"}`)}
-        <div className="cheat-sheet-item__label">
-          The operator after the label name supports
-          <code>=</code>, <code>!=</code>, <code>=~</code>, <code>!~</code>.
-        </div>
-        <div className="cheat-sheet-item__label">
-          The <code>=~</code> and <code>!~</code> can follow the regex expression. See{' '}
-          <a
-            href="https://grafana.com/docs/loki/latest/logql/#log-stream-selector"
-            target="logql"
-            style={{ color: 'blue' }}
-          >
-            Log stream selector detail
-          </a>
-          .
-        </div>
+        {renderExpression(`{namespace=~".*${clusterId}", container=~"tikv"}`)}
+        {renderExpression(`{namespace=~".*${clusterId}", container=~"tikv", instance=~"db-tikv-0"}`)}
+        {renderExpression(`{namespace=~".*${clusterId}", container=~"tikv", instance=~"db-tikv-0"} |~ "error"`)}
       </div>
 
       <div className="cheat-sheet-item">
-        <div className="cheat-sheet-item__title">Log filter</div>
-        <div className="cheat-sheet-item__label">Logs can be filtered by search keywords. For example:</div>
-        {renderExpression(`{container="slowlog"} |~ "Plan"`)}
+        <div className="cheat-sheet-item__title">To view all Slow logs</div>
         <div className="cheat-sheet-item__label">
-          The operator for filtering supports
-          <code>|=</code>, <code>!=</code>, <code>|~</code>, <code>!~</code>. And they can be chained.
+          Same as view all TiDB logs, but with <code>slowlog</code> <b>LogType</b>, and the target <b>Instance</b>{' '}
+          should start with <code>db-tidb-</code>.
         </div>
+        {renderExpression(`{namespace=~".*${clusterId}", container=~"slowlog"}`)}
+        {renderExpression(`{namespace=~".*${clusterId}", container=~"slowlog", instance=~"db-tidb-0"}`)}
+        {renderExpression(`{namespace=~".*${clusterId}", container=~"slowlog", instance=~"db-tidb-0"} |~ "Plan"`)}
+      </div>
+
+      <div className="cheat-sheet-item">
+        <div className="cheat-sheet-item__title">To view all RocksDB/Raft logs</div>
         <div className="cheat-sheet-item__label">
-          The <code>|~</code> and <code>!~</code> can follow the regex expression. See{' '}
-          <a
-            href="https://grafana.com/docs/loki/latest/logql/#line-filter-expression"
-            target="logql"
-            style={{ color: 'blue' }}
-          >
-            Log line filter expression detail
-          </a>
-          .
+          Same as view all TiDB logs, but with <code>rocksdblog</code> and <code>raftlog</code> <b>LogType</b>, and the
+          target <b>Instance</b> should start with <code>db-tikv-</code>.
         </div>
-        <div className="cheat-sheet-item__label">
-          Modify the query express manually if you want to use more complex filters. For example:
-        </div>
-        {renderExpression(`{container="slowlog"} |= "Plan"`)}
-        {renderExpression(`{container="slowlog"} != "Plan"`)}
-        {renderExpression('{container=~"pd|tidb|tikv"} |~ `error=\\w+`')}
-        {renderExpression('{container=~"pd|tidb|tikv"} |~ `error=\\w+` != "timeout"')}
+        {renderExpression(`{namespace=~".*${clusterId}", container=~"rocksdblog"}`)}
+        {renderExpression(`{namespace=~".*${clusterId}", container=~"rocksdblog", instance=~"db-tikv-0"}`)}
+        {renderExpression(`{namespace=~".*${clusterId}", container=~"rocksdblog", instance=~"db-tikv-0"} |~ "error"`)}
       </div>
 
       <br />
       <h2>Advanced Usage</h2>
-      {LOGQL_EXAMPLES.map((item, index) => (
-        <div className="cheat-sheet-item" key={index}>
-          <div className="cheat-sheet-item__title">{item.title}</div>
-          {item.expression && renderExpression(item.expression)}
-          <div className="cheat-sheet-item__label">{item.label}</div>
-        </div>
-      ))}
+      <div>
+        The query expression syntax is defined by{' '}
+        <a href="https://grafana.com/docs/loki/latest/logql/" target="logql" style={{ color: 'blue' }}>
+          Loki LogQL
+        </a>
+        , get detail from its document.
+      </div>
     </div>
   );
 }
