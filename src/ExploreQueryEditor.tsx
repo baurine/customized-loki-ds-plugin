@@ -29,11 +29,12 @@ export default function ExploreQueryEditor(props: Props) {
     { value: 'tidb', label: 'tidb' },
     { value: 'tikv', label: 'tikv' },
     { value: 'pd', label: 'pd' },
+    { value: 'tiflash', label: 'tiflash' },
     { value: 'slowlog', label: 'slowlog' },
     { value: 'rocksdblog', label: 'rocksdblog' },
     { value: 'raftlog', label: 'raftlog' },
   ];
-  const [selectedLogType, setSelectedLogType] = useState<SelectableValue | undefined>(logTypeOptions[0]);
+  const [selectedLogType, setSelectedLogType] = useState<SelectableValue | undefined>(logTypeOptions.slice(0, 3));
 
   const [search, setSearch] = useState('');
 
@@ -53,6 +54,14 @@ export default function ExploreQueryEditor(props: Props) {
       if (override && onRunQuery) {
         onRunQuery();
       }
+    }
+  };
+
+  const onLineLimitChange = (event: any) => {
+    const str = event.currentTarget.value;
+    const val = parseInt(str.trim(), 10);
+    if (val > 0 && val <= lokiMaxLines) {
+      onChange?.({ ...query, maxLines: val });
     }
   };
 
@@ -186,9 +195,9 @@ export default function ExploreQueryEditor(props: Props) {
         return a.value > b.value ? 1 : -1;
       });
       setPodOptions(podOptions);
-      if (podOptions.length > 0) {
-        setSelectedPod(podOptions[0]);
-      }
+      // if (podOptions.length > 0) {
+      //   setSelectedPod(podOptions[0]);
+      // }
     }
 
     async function fetch() {
@@ -238,10 +247,6 @@ export default function ExploreQueryEditor(props: Props) {
       exprArr.push(`namespace="unknown"`);
     }
 
-    if (selectedPod) {
-      exprArr.push(`instance=~"${selectedPod.value}"`);
-    }
-
     let logTypes = '';
     if (Array.isArray(selectedLogType)) {
       // when select multiple LogType
@@ -253,10 +258,30 @@ export default function ExploreQueryEditor(props: Props) {
       exprArr.push(`container=~"${logTypes}"`);
     }
 
+    if (selectedPod) {
+      exprArr.push(`instance=~"${selectedPod.value}"`);
+    }
+
     filters.forEach((f) => exprArr.push(f));
     const finalExpr = `{${exprArr.join(', ')}} |~ "${search}"`;
     changeQueryRef.current!(finalExpr);
   }, [selectedCluster, selectedPod, selectedLogType, search, filters]);
+
+  const [lineLimitTooltip, setLineLimitTooltip] = useState('Loading...');
+  const [lokiMaxLines, setLokiMaxLines] = useState(1000);
+  useEffect(() => {
+    async function queryLokiMaxLines() {
+      const lokiDS = await datasource.getLokiDS();
+      if (Object.keys(lokiDS).indexOf('maxLines') >= 0) {
+        const maxLines = (lokiDS as any)['maxLines'];
+        const tooltip = `The value can't beyond ${maxLines} which is configured when adding ${lokiDS.name} data source`;
+        setLineLimitTooltip(tooltip);
+        setLokiMaxLines(maxLines);
+      }
+    }
+
+    queryLokiMaxLines();
+  }, [datasource]);
 
   return (
     <div>
@@ -281,16 +306,6 @@ export default function ExploreQueryEditor(props: Props) {
             value={selectedCluster}
           />
         </InlineField>
-        <InlineField label="Pod" tooltip="Each pod represents a tidb/tikv/pd instance, respond to instance label">
-          <Select
-            isLoading={loadingPod}
-            isClearable
-            width={16}
-            onChange={setSelectedPod}
-            options={podOptions}
-            value={selectedPod}
-          />
-        </InlineField>
         <InlineField label="LogType" tooltip="Aka container name, respond to container label">
           <Select
             isClearable
@@ -299,6 +314,19 @@ export default function ExploreQueryEditor(props: Props) {
             options={logTypeOptions}
             value={selectedLogType}
             isMulti={true}
+          />
+        </InlineField>
+        <InlineField
+          label="Instance"
+          tooltip="Aka pod name, each pod represents a tidb/tikv/pd instance, respond to instance label"
+        >
+          <Select
+            isLoading={loadingPod}
+            isClearable
+            width={16}
+            onChange={setSelectedPod}
+            options={podOptions}
+            value={selectedPod}
           />
         </InlineField>
       </div>
@@ -314,8 +342,14 @@ export default function ExploreQueryEditor(props: Props) {
           query={query.expr || ''}
           placeholder="Enter a query"
         />
-        <InlineField label="Line limit" style={{ marginLeft: 4 }}>
-          <Input width={8} placeholder="todo" css="" />
+        <InlineField label="Line limit" tooltip={lineLimitTooltip} style={{ marginLeft: 4 }}>
+          <Input
+            width={8}
+            placeholder="auto"
+            value={query.maxLines || lokiMaxLines}
+            onChange={onLineLimitChange}
+            css=""
+          />
         </InlineField>
       </div>
       {filters.length > 0 && (

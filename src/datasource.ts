@@ -20,17 +20,28 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
 
   constructor(private instanceSettings: DataSourceInstanceSettings<MyDataSourceOptions>) {
     super(instanceSettings);
+    this.getLokiDS();
+  }
 
+  getLokiDS(): Promise<DataSourceApi> {
+    if (this.lokiDS) {
+      return Promise.resolve(this.lokiDS);
+    }
     const {
       jsonData: { lokiDataSourceName },
     } = this.instanceSettings;
     const dataSourceSrv = getDataSourceSrv();
+    // It seems this step is redundant, because `lokiDsSetting.name` equals `lokiDataSourceName`.
+    // It is true because we used `lokiDataSourceUid` instead of `lokiDataSourceName` before.
+    // Keep this logic in case we will use `lokiDataSourceUid` back in the future.
     const lokiDsSetting = dataSourceSrv.getInstanceSettings(lokiDataSourceName);
     if (lokiDsSetting) {
-      dataSourceSrv.get(lokiDsSetting.name).then((ds) => {
+      return dataSourceSrv.get(lokiDsSetting.name).then((ds) => {
         this.lokiDS = ds as any;
+        return ds as any;
       });
     }
+    throw Error('Has no loki datasource');
   }
 
   getPromDS(): Promise<DataSourceApi> {

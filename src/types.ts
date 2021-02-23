@@ -1,7 +1,9 @@
 import { DataQuery, DataSourceJsonData } from '@grafana/data';
 
+// keep same as the loki data source
 export interface MyQuery extends DataQuery {
-  expr: string; // keep same as the loki data source
+  expr: string;
+  maxLines?: number;
 }
 
 /**
