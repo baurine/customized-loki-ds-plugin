@@ -26,9 +26,9 @@ export default function ExploreQueryEditor(props: Props) {
   const [loadingPod, setLoadingPod] = useState(false);
 
   const logTypeOptions: SelectableValue[] = [
+    { value: 'pd', label: 'pd' },
     { value: 'tidb', label: 'tidb' },
     { value: 'tikv', label: 'tikv' },
-    { value: 'pd', label: 'pd' },
     { value: 'slowlog', label: 'slowlog' },
     { value: 'rocksdblog', label: 'rocksdblog' },
     { value: 'raftlog', label: 'raftlog' },
@@ -53,6 +53,14 @@ export default function ExploreQueryEditor(props: Props) {
       if (override && onRunQuery) {
         onRunQuery();
       }
+    }
+  };
+
+  const onLineLimitChange = (event: any) => {
+    const str = event.currentTarget.value;
+    const val = parseInt(str.trim());
+    if (val > 0 && val <= lokiMaxLines) {
+      onChange?.({ ...query, maxLines: val });
     }
   };
 
@@ -258,6 +266,22 @@ export default function ExploreQueryEditor(props: Props) {
     changeQueryRef.current!(finalExpr);
   }, [selectedCluster, selectedPod, selectedLogType, search, filters]);
 
+  const [lineLimitTooltip, setLineLimitTooltip] = useState('Loading...');
+  const [lokiMaxLines, setLokiMaxLines] = useState(1000);
+  useEffect(() => {
+    async function queryLokiMaxLines() {
+      const lokiDS = await datasource.getLokiDS();
+      if (Object.keys(lokiDS).indexOf('maxLines') >= 0) {
+        const maxLines = (lokiDS as any)['maxLines'];
+        const tooltip = `The value can't beyond ${maxLines} which is configured when adding ${lokiDS.name} data source`;
+        setLineLimitTooltip(tooltip);
+        setLokiMaxLines(maxLines);
+      }
+    }
+
+    queryLokiMaxLines();
+  }, [datasource]);
+
   return (
     <div>
       <div style={{ display: 'flex' }}>
@@ -314,8 +338,14 @@ export default function ExploreQueryEditor(props: Props) {
           query={query.expr || ''}
           placeholder="Enter a query"
         />
-        <InlineField label="Line limit" style={{ marginLeft: 4 }}>
-          <Input width={8} placeholder="todo" css="" />
+        <InlineField label="Line limit" tooltip={lineLimitTooltip} style={{ marginLeft: 4 }}>
+          <Input
+            width={8}
+            placeholder="auto"
+            value={query.maxLines || lokiMaxLines}
+            onChange={onLineLimitChange}
+            css=""
+          />
         </InlineField>
       </div>
       {filters.length > 0 && (
