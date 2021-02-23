@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.6
+
+- Support line limit option
+- Refine Help page
+- Adjust the order of the options
+
 ## 0.0.5
 
 - Support select multiple LogType (aka containers)
