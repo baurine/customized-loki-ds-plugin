@@ -26,14 +26,15 @@ export default function ExploreQueryEditor(props: Props) {
   const [loadingPod, setLoadingPod] = useState(false);
 
   const logTypeOptions: SelectableValue[] = [
-    { value: 'pd', label: 'pd' },
     { value: 'tidb', label: 'tidb' },
     { value: 'tikv', label: 'tikv' },
+    { value: 'pd', label: 'pd' },
+    { value: 'tiflash', label: 'tiflash' },
     { value: 'slowlog', label: 'slowlog' },
     { value: 'rocksdblog', label: 'rocksdblog' },
     { value: 'raftlog', label: 'raftlog' },
   ];
-  const [selectedLogType, setSelectedLogType] = useState<SelectableValue | undefined>(logTypeOptions[0]);
+  const [selectedLogType, setSelectedLogType] = useState<SelectableValue | undefined>(logTypeOptions.slice(0, 3));
 
   const [search, setSearch] = useState('');
 
@@ -194,9 +195,9 @@ export default function ExploreQueryEditor(props: Props) {
         return a.value > b.value ? 1 : -1;
       });
       setPodOptions(podOptions);
-      if (podOptions.length > 0) {
-        setSelectedPod(podOptions[0]);
-      }
+      // if (podOptions.length > 0) {
+      //   setSelectedPod(podOptions[0]);
+      // }
     }
 
     async function fetch() {
@@ -246,10 +247,6 @@ export default function ExploreQueryEditor(props: Props) {
       exprArr.push(`namespace="unknown"`);
     }
 
-    if (selectedPod) {
-      exprArr.push(`instance=~"${selectedPod.value}"`);
-    }
-
     let logTypes = '';
     if (Array.isArray(selectedLogType)) {
       // when select multiple LogType
@@ -259,6 +256,10 @@ export default function ExploreQueryEditor(props: Props) {
     }
     if (logTypes) {
       exprArr.push(`container=~"${logTypes}"`);
+    }
+
+    if (selectedPod) {
+      exprArr.push(`instance=~"${selectedPod.value}"`);
     }
 
     filters.forEach((f) => exprArr.push(f));
@@ -305,16 +306,6 @@ export default function ExploreQueryEditor(props: Props) {
             value={selectedCluster}
           />
         </InlineField>
-        <InlineField label="Pod" tooltip="Each pod represents a tidb/tikv/pd instance, respond to instance label">
-          <Select
-            isLoading={loadingPod}
-            isClearable
-            width={16}
-            onChange={setSelectedPod}
-            options={podOptions}
-            value={selectedPod}
-          />
-        </InlineField>
         <InlineField label="LogType" tooltip="Aka container name, respond to container label">
           <Select
             isClearable
@@ -323,6 +314,19 @@ export default function ExploreQueryEditor(props: Props) {
             options={logTypeOptions}
             value={selectedLogType}
             isMulti={true}
+          />
+        </InlineField>
+        <InlineField
+          label="Instance"
+          tooltip="Aka pod name, each pod represents a tidb/tikv/pd instance, respond to instance label"
+        >
+          <Select
+            isLoading={loadingPod}
+            isClearable
+            width={16}
+            onChange={setSelectedPod}
+            options={podOptions}
+            value={selectedPod}
           />
         </InlineField>
       </div>
