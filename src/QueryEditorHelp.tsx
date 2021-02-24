@@ -34,55 +34,59 @@ export default function QueryEditorHelp(props: QueryEditorHelpProps) {
     <div>
       <h2>Basic Usage</h2>
       <div className="cheat-sheet-item">
-        <div className="cheat-sheet-item__title">To view all TiDB logs</div>
+        <div className="cheat-sheet-item__title">To view TiDB logs</div>
         <div className="cheat-sheet-item__label">
-          Select target <b>Tenant</b>, target <b>Cluster</b>, and <code>tidb</code> <b>LogType</b>.
+          To view all TiDB logs, select target <b>Tenant</b>, target <b>Cluster</b>, and <code>tidb</code>{' '}
+          <b>LogType</b>.
         </div>
-        {renderExpression(`{namespace=~".*${clusterId}", container=~"tidb"}`)}
+        {renderExpression(`{namespace="tidb${clusterId}", container="tidb"}`)}
         <div className="cheat-sheet-item__label">
           To view TiDB logs of an individual TiDB instance, continue to select target <b>Instance</b> which starts with
           <code>db-tidb-</code>.
         </div>
-        {renderExpression(`{namespace=~".*${clusterId}", container=~"tidb", instance=~"db-tidb-0"}`)}
+        {renderExpression(`{namespace="tidb${clusterId}", container="tidb", instance="db-tidb-0"}`)}
         <div className="cheat-sheet-item__label">
-          To search TiDB logs by keywords, input the keywords (for example <code>error</code>) in the <b>Search</b>{' '}
-          input box.
+          To search TiDB logs by keywords, input the keywords in the <b>Search</b> input box.
         </div>
-        {renderExpression(`{namespace=~".*${clusterId}", container=~"tidb", instance=~"db-tidb-0"} |~ "error"`)}
+        <div className="cheat-sheet-item__label">
+          The keywords support normal string, such as <code>error</code>, or regex, such as <code>/error\S/</code>.
+        </div>
+        {renderExpression(`{namespace="tidb${clusterId}", container="tidb", instance="db-tidb-0"} |= "error"`)}
+        {renderExpression(`{namespace="tidb${clusterId}", container="tidb", instance="db-tidb-0"} |~ ` + '`error\\S`')}
       </div>
 
       <div className="cheat-sheet-item">
-        <div className="cheat-sheet-item__title">To view all TiKV/PD/TiFlash logs</div>
+        <div className="cheat-sheet-item__title">To view TiKV/PD/TiFlash logs</div>
         <div className="cheat-sheet-item__label">
-          Same as view all TiDB logs, but with <code>tikv</code>, <code>pd</code> and <code>tiflash</code>{' '}
-          <b>LogType</b>, and the target <b>Instance</b> should start with <code>db-tikv-</code>, <code>db-pd-</code>{' '}
-          and <code>db-tiflash-</code>.
+          Same as view TiDB logs, but with <code>tikv</code>, <code>pd</code> and <code>tiflash</code> <b>LogType</b>,
+          and the target <b>Instance</b> should start with <code>db-tikv-</code>, <code>db-pd-</code> and{' '}
+          <code>db-tiflash-</code>.
         </div>
-        {renderExpression(`{namespace=~".*${clusterId}", container=~"tikv"}`)}
-        {renderExpression(`{namespace=~".*${clusterId}", container=~"tikv", instance=~"db-tikv-0"}`)}
-        {renderExpression(`{namespace=~".*${clusterId}", container=~"tikv", instance=~"db-tikv-0"} |~ "error"`)}
+        {renderExpression(`{namespace="tidb${clusterId}", container="tikv"}`)}
+        {renderExpression(`{namespace="tidb${clusterId}", container="tikv", instance="db-tikv-0"}`)}
+        {renderExpression(`{namespace="tidb${clusterId}", container="tikv", instance="db-tikv-0"} |= "error"`)}
       </div>
 
       <div className="cheat-sheet-item">
-        <div className="cheat-sheet-item__title">To view all Slow logs</div>
+        <div className="cheat-sheet-item__title">To view Slow logs</div>
         <div className="cheat-sheet-item__label">
-          Same as view all TiDB logs, but with <code>slowlog</code> <b>LogType</b>, and the target <b>Instance</b>{' '}
-          should start with <code>db-tidb-</code>.
+          Same as view TiDB logs, but with <code>slowlog</code> <b>LogType</b>, and the target <b>Instance</b> should
+          start with <code>db-tidb-</code>.
         </div>
-        {renderExpression(`{namespace=~".*${clusterId}", container=~"slowlog"}`)}
-        {renderExpression(`{namespace=~".*${clusterId}", container=~"slowlog", instance=~"db-tidb-0"}`)}
-        {renderExpression(`{namespace=~".*${clusterId}", container=~"slowlog", instance=~"db-tidb-0"} |~ "Plan"`)}
+        {renderExpression(`{namespace="tidb${clusterId}", container="slowlog"}`)}
+        {renderExpression(`{namespace="tidb${clusterId}", container="slowlog", instance="db-tidb-0"}`)}
+        {renderExpression(`{namespace="tidb${clusterId}", container="slowlog", instance="db-tidb-0"} |= "Plan"`)}
       </div>
 
       <div className="cheat-sheet-item">
-        <div className="cheat-sheet-item__title">To view all RocksDB/Raft logs</div>
+        <div className="cheat-sheet-item__title">To view RocksDB/Raft logs</div>
         <div className="cheat-sheet-item__label">
-          Same as view all TiDB logs, but with <code>rocksdblog</code> and <code>raftlog</code> <b>LogType</b>, and the
+          Same as view TiDB logs, but with <code>rocksdblog</code> and <code>raftlog</code> <b>LogType</b>, and the
           target <b>Instance</b> should start with <code>db-tikv-</code>.
         </div>
-        {renderExpression(`{namespace=~".*${clusterId}", container=~"rocksdblog"}`)}
-        {renderExpression(`{namespace=~".*${clusterId}", container=~"rocksdblog", instance=~"db-tikv-0"}`)}
-        {renderExpression(`{namespace=~".*${clusterId}", container=~"rocksdblog", instance=~"db-tikv-0"} |~ "error"`)}
+        {renderExpression(`{namespace="tidb${clusterId}", container="rocksdblog"}`)}
+        {renderExpression(`{namespace="tidb${clusterId}", container="rocksdblog", instance="db-tikv-0"}`)}
+        {renderExpression(`{namespace="tidb${clusterId}", container="rocksdblog", instance="db-tikv-0"} |= "error"`)}
       </div>
 
       <br />
@@ -93,6 +97,28 @@ export default function QueryEditorHelp(props: QueryEditorHelpProps) {
           Loki LogQL
         </a>
         , get detail from its document.
+      </div>
+
+      <div className="cheat-sheet-item">
+        <div className="cheat-sheet-item__title">Line Filter Expression (chain, filter out)</div>
+        <div className="cheat-sheet-item__label">
+          After writing the log stream selector, the resulting set of logs can be further filtered with a search
+          expression. The search expression can be just text or regex.
+        </div>
+        <div className="cheat-sheet-item__label">
+          These filter operators are supported: <code>|=</code>, <code>!=</code>, <code>|~</code>, <code>!~</code>. And
+          they can be chained. See{' '}
+          <a
+            href="https://grafana.com/docs/loki/latest/logql/#line-filter-expression"
+            target="logql"
+            style={{ color: 'blue' }}
+          >
+            Log line filter expression detail
+          </a>
+          .
+        </div>
+        <div className="cheat-sheet-item__label"></div>
+        {renderExpression(`{namespace="tidb${clusterId}", container="tidb"} |= "error" != "timeout"`)}
       </div>
     </div>
   );
