@@ -38,17 +38,17 @@ export default function QueryEditorHelp(props: QueryEditorHelpProps) {
         <div className="cheat-sheet-item__label">
           Select target <b>Tenant</b>, target <b>Cluster</b>, and <code>tidb</code> <b>LogType</b>.
         </div>
-        {renderExpression(`{namespace=~".*${clusterId}", container=~"tidb"}`)}
+        {renderExpression(`{namespace="tidb${clusterId}", container="tidb"}`)}
         <div className="cheat-sheet-item__label">
           To view TiDB logs of an individual TiDB instance, continue to select target <b>Instance</b> which starts with
           <code>db-tidb-</code>.
         </div>
-        {renderExpression(`{namespace=~".*${clusterId}", container=~"tidb", instance=~"db-tidb-0"}`)}
+        {renderExpression(`{namespace="tidb${clusterId}", container="tidb", instance="db-tidb-0"}`)}
         <div className="cheat-sheet-item__label">
           To search TiDB logs by keywords, input the keywords (for example <code>error</code>) in the <b>Search</b>{' '}
           input box.
         </div>
-        {renderExpression(`{namespace=~".*${clusterId}", container=~"tidb", instance=~"db-tidb-0"} |~ "error"`)}
+        {renderExpression(`{namespace="tidb${clusterId}", container="tidb", instance="db-tidb-0"} |= "error"`)}
       </div>
 
       <div className="cheat-sheet-item">
@@ -58,9 +58,9 @@ export default function QueryEditorHelp(props: QueryEditorHelpProps) {
           <b>LogType</b>, and the target <b>Instance</b> should start with <code>db-tikv-</code>, <code>db-pd-</code>{' '}
           and <code>db-tiflash-</code>.
         </div>
-        {renderExpression(`{namespace=~".*${clusterId}", container=~"tikv"}`)}
-        {renderExpression(`{namespace=~".*${clusterId}", container=~"tikv", instance=~"db-tikv-0"}`)}
-        {renderExpression(`{namespace=~".*${clusterId}", container=~"tikv", instance=~"db-tikv-0"} |~ "error"`)}
+        {renderExpression(`{namespace="tidb${clusterId}", container="tikv"}`)}
+        {renderExpression(`{namespace="tidb${clusterId}", container="tikv", instance="db-tikv-0"}`)}
+        {renderExpression(`{namespace="tidb${clusterId}", container="tikv", instance="db-tikv-0"} |= "error"`)}
       </div>
 
       <div className="cheat-sheet-item">
@@ -69,9 +69,9 @@ export default function QueryEditorHelp(props: QueryEditorHelpProps) {
           Same as view all TiDB logs, but with <code>slowlog</code> <b>LogType</b>, and the target <b>Instance</b>{' '}
           should start with <code>db-tidb-</code>.
         </div>
-        {renderExpression(`{namespace=~".*${clusterId}", container=~"slowlog"}`)}
-        {renderExpression(`{namespace=~".*${clusterId}", container=~"slowlog", instance=~"db-tidb-0"}`)}
-        {renderExpression(`{namespace=~".*${clusterId}", container=~"slowlog", instance=~"db-tidb-0"} |~ "Plan"`)}
+        {renderExpression(`{namespace="tidb${clusterId}", container="slowlog"}`)}
+        {renderExpression(`{namespace="tidb${clusterId}", container="slowlog", instance="db-tidb-0"}`)}
+        {renderExpression(`{namespace="tidb${clusterId}", container="slowlog", instance="db-tidb-0"} |= "Plan"`)}
       </div>
 
       <div className="cheat-sheet-item">
@@ -80,9 +80,9 @@ export default function QueryEditorHelp(props: QueryEditorHelpProps) {
           Same as view all TiDB logs, but with <code>rocksdblog</code> and <code>raftlog</code> <b>LogType</b>, and the
           target <b>Instance</b> should start with <code>db-tikv-</code>.
         </div>
-        {renderExpression(`{namespace=~".*${clusterId}", container=~"rocksdblog"}`)}
-        {renderExpression(`{namespace=~".*${clusterId}", container=~"rocksdblog", instance=~"db-tikv-0"}`)}
-        {renderExpression(`{namespace=~".*${clusterId}", container=~"rocksdblog", instance=~"db-tikv-0"} |~ "error"`)}
+        {renderExpression(`{namespace="tidb${clusterId}", container="rocksdblog"}`)}
+        {renderExpression(`{namespace="tidb${clusterId}", container="rocksdblog", instance="db-tikv-0"}`)}
+        {renderExpression(`{namespace="tidb${clusterId}", container="rocksdblog", instance="db-tikv-0"} |= "error"`)}
       </div>
 
       <br />

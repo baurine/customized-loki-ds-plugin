@@ -241,7 +241,7 @@ export default function ExploreQueryEditor(props: Props) {
   useEffect(() => {
     let exprArr: string[] = [];
     if (selectedCluster) {
-      exprArr.push(`namespace=~".*${selectedCluster.value}"`);
+      exprArr.push(`namespace="tidb${selectedCluster.value}"`);
     } else {
       // if not select a target cluster, it is expected to return empty logs
       exprArr.push(`namespace="unknown"`);
@@ -255,15 +255,29 @@ export default function ExploreQueryEditor(props: Props) {
       logTypes = selectedLogType?.value || '';
     }
     if (logTypes) {
-      exprArr.push(`container=~"${logTypes}"`);
+      if (logTypes.indexOf('|') > 0) {
+        exprArr.push(`container=~"${logTypes}"`);
+      } else {
+        exprArr.push(`container="${logTypes}"`);
+      }
     }
 
     if (selectedPod) {
-      exprArr.push(`instance=~"${selectedPod.value}"`);
+      exprArr.push(`instance="${selectedPod.value}"`);
     }
 
     filters.forEach((f) => exprArr.push(f));
-    const finalExpr = `{${exprArr.join(', ')}} |~ "${search}"`;
+    let finalExpr = `{${exprArr.join(', ')}}`;
+    let trimSearch = search.trim();
+    if (trimSearch) {
+      const isRegex = trimSearch.length > 2 && trimSearch.startsWith('/') && trimSearch.endsWith('/');
+      if (isRegex) {
+        const str = trimSearch.substring(1, trimSearch.length - 1);
+        finalExpr += ' |~ `' + str + '`';
+      } else {
+        finalExpr += ` |= "${trimSearch}"`;
+      }
+    }
     changeQueryRef.current!(finalExpr);
   }, [selectedCluster, selectedPod, selectedLogType, search, filters]);
 
@@ -296,7 +310,7 @@ export default function ExploreQueryEditor(props: Props) {
             value={selectedTenant}
           />
         </InlineField>
-        <InlineField label="Cluster" tooltip="Respond to namespace label">
+        <InlineField label="Cluster" required={true} tooltip="Respond to namespace label, required.">
           <Select
             isLoading={loadingCluster}
             isClearable
@@ -331,7 +345,10 @@ export default function ExploreQueryEditor(props: Props) {
         </InlineField>
       </div>
       <div className="query-field">
-        <InlineField label="Search">
+        <InlineField
+          label="Search"
+          tooltip='Support search by normal string or regex, the regex should be wrapped by "/", such as /error\w/. Both are case-sensitive.'
+        >
           <Input width={20} value={search} onChange={(e) => setSearch(e.currentTarget.value)} css="" />
         </InlineField>
         <QueryField
