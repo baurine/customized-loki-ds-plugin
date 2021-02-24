@@ -1,6 +1,6 @@
 {
   "name": "pingcap-customized-loki",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "a customized loki datasource plugin for improving explore use experience",
   "scripts": {
     "build": "grafana-toolkit plugin:build",

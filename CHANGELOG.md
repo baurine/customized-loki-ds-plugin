@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.7
+
+[PR #4](https://github.com/baurine/customized-loki-ds-plugin/pull/4)
+
+- Replace most `=~` to `=`, support normal and regex search string both
+- Refine Help page
 ## 0.0.6
 
 - Support line limit option
