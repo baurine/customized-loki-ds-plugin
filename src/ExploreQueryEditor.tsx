@@ -347,7 +347,7 @@ export default function ExploreQueryEditor(props: Props) {
       <div className="query-field">
         <InlineField
           label="Search"
-          tooltip='Support search by normal string or regex, the regex should be wrapped by "/", such as /error\w/. Both are case-sensitive.'
+          tooltip='Support search by normal string or regex, the regex should be wrapped by "/", such as /error\S/. Both are case-sensitive.'
         >
           <Input width={20} value={search} onChange={(e) => setSearch(e.currentTarget.value)} css="" />
         </InlineField>
