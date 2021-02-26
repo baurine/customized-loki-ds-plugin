@@ -89,24 +89,14 @@ export default function QueryEditorHelp(props: QueryEditorHelpProps) {
         {renderExpression(`{namespace="tidb${clusterId}", container="rocksdblog", instance="db-tikv-0"} |= "error"`)}
       </div>
 
-      <br />
-      <h2>Advanced Usage</h2>
-      <div>
-        The query expression syntax is defined by{' '}
-        <a href="https://grafana.com/docs/loki/latest/logql/" target="logql" style={{ color: 'blue' }}>
-          Loki LogQL
-        </a>
-        , get detail from its document.
-      </div>
-
       <div className="cheat-sheet-item">
-        <div className="cheat-sheet-item__title">Line Filter Expression (chain, filter out)</div>
+        <div className="cheat-sheet-item__title">To search logs by line filter expression</div>
         <div className="cheat-sheet-item__label">
-          After writing the log stream selector, the resulting set of logs can be further filtered with a search
-          expression. The search expression can be just text or regex.
+          The resulting set of logs can be further filtered with a search expression. The search expression can be just
+          text or regex.
         </div>
         <div className="cheat-sheet-item__label">
-          These filter operators are supported: <code>|=</code>, <code>!=</code>, <code>|~</code>, <code>!~</code>. And
+          These filter operators are supported: <code>|=</code>, <code>!=</code>, <code>|~</code>, <code>!~</code>, and
           they can be chained. See{' '}
           <a
             href="https://grafana.com/docs/loki/latest/logql/#line-filter-expression"
@@ -117,8 +107,38 @@ export default function QueryEditorHelp(props: QueryEditorHelpProps) {
           </a>
           .
         </div>
-        <div className="cheat-sheet-item__label"></div>
-        {renderExpression(`{namespace="tidb${clusterId}", container="tidb"} |= "error" != "timeout"`)}
+        <div className="cheat-sheet-item__label">
+          To filter logs that contain <code>uuid</code> and <code>regions</code> both.
+        </div>
+        {renderExpression(`{namespace="tidb${clusterId}", container="tidb"} |= "uuid" |= "regions"`)}
+        <div className="cheat-sheet-item__label">
+          To filter logs that contain <code>uuid</code> or <code>regions</code>.
+        </div>
+        {renderExpression(`{namespace="tidb${clusterId}", container="tidb"} |~ ` + '"uuid|regions"')}
+        <div className="cheat-sheet-item__label">
+          To filter logs that contain <code>uuid</code>, but not contain <code>regions</code>.
+        </div>
+        {renderExpression(`{namespace="tidb${clusterId}", container="tidb"} |= "uuid" != "regions"`)}
+        <div className="cheat-sheet-item__label">
+          To filter logs that contain <code>UUID</code> by case-insensitive, add the <code>(?i)</code> in the begining
+          of search expression.
+        </div>
+        {renderExpression(`{namespace="tidb${clusterId}", container="tidb"} |~ "(?i)UUID"`)}
+        <div className="cheat-sheet-item__label">
+          If the search expression is regex and contains backslash <code>\</code>, the expression should be wrapped by
+          backticks <code>`</code> instead of double quotes <code>"</code>.
+        </div>
+        {renderExpression(`{namespace="tidb${clusterId}", container="tidb"} |~ ` + '`uuid\\S`')}
+      </div>
+
+      <br />
+      <h2>Advanced Usage</h2>
+      <div>
+        The query expression syntax is defined by{' '}
+        <a href="https://grafana.com/docs/loki/latest/logql/" target="logql" style={{ color: 'blue' }}>
+          Loki LogQL
+        </a>
+        , get detail from its document.
       </div>
     </div>
   );
