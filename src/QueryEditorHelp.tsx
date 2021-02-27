@@ -115,7 +115,21 @@ export default function QueryEditorHelp(props: QueryEditorHelpProps) {
           Exclude <code>uuid</code>.
         </div>
         {renderExpression(`{namespace="tidb${clusterId}", container="tidb"} != "uuid"`)}
-        <div className="cheat-sheet-item__label">Match regex.</div>
+        <div className="cheat-sheet-item__label">
+          Match regex.{' '}
+          <span style={{ fontStyle: 'italic' }}>
+            (Notice: use regex may lost logs context, see{' '}
+            <a
+              href="https://github.com/grafana/grafana/issues/31497"
+              target="_blank"
+              rel="noreferrer"
+              style={{ color: 'blue' }}
+            >
+              detail
+            </a>
+            .)
+          </span>
+        </div>
         {renderExpression(`{namespace="tidb${clusterId}", container="tidb"} |~ ` + '`uuid\\S`')}
         <div className="cheat-sheet-item__label">
           Match <code>uuid</code> <b>and</b> <code>regions</code>.
