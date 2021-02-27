@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.0.8
+
+[PR #5](https://github.com/baurine/customized-loki-ds-plugin/pull/5)
+
+- Refine search expression
+- Refine Help page
+
 ## 0.0.7
 
 [PR #4](https://github.com/baurine/customized-loki-ds-plugin/pull/4)
