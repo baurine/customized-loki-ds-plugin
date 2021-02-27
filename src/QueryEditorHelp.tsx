@@ -108,27 +108,31 @@ export default function QueryEditorHelp(props: QueryEditorHelpProps) {
           .
         </div>
         <div className="cheat-sheet-item__label">
-          To filter logs that contain <code>uuid</code> and <code>regions</code> both.
+          Match <code>uuid</code>.
+        </div>
+        {renderExpression(`{namespace="tidb${clusterId}", container="tidb"} |= "uuid"`)}
+        <div className="cheat-sheet-item__label">
+          Exclude <code>uuid</code>.
+        </div>
+        {renderExpression(`{namespace="tidb${clusterId}", container="tidb"} != "uuid"`)}
+        <div className="cheat-sheet-item__label">Match regex.</div>
+        {renderExpression(`{namespace="tidb${clusterId}", container="tidb"} |~ ` + '`uuid\\S`')}
+        <div className="cheat-sheet-item__label">
+          Match <code>uuid</code> <b>and</b> <code>regions</code>.
         </div>
         {renderExpression(`{namespace="tidb${clusterId}", container="tidb"} |= "uuid" |= "regions"`)}
         <div className="cheat-sheet-item__label">
-          To filter logs that contain <code>uuid</code> or <code>regions</code>.
-        </div>
-        {renderExpression(`{namespace="tidb${clusterId}", container="tidb"} |~ ` + '"uuid|regions"')}
-        <div className="cheat-sheet-item__label">
-          To filter logs that contain <code>uuid</code>, but not contain <code>regions</code>.
+          Match <code>uuid</code> <b>and exclude</b> <code>regions</code>.
         </div>
         {renderExpression(`{namespace="tidb${clusterId}", container="tidb"} |= "uuid" != "regions"`)}
         <div className="cheat-sheet-item__label">
-          To filter logs that contain <code>UUID</code> by case-insensitive, add the <code>(?i)</code> in the begining
-          of search expression.
+          Match <code>uuid</code> <b>or</b> <code>regions</code> by using regex.
+        </div>
+        {renderExpression(`{namespace="tidb${clusterId}", container="tidb"} |~ "uuid|regions"`)}
+        <div className="cheat-sheet-item__label">
+          Match <code>uuid</code> case-insensitively by using regex.
         </div>
         {renderExpression(`{namespace="tidb${clusterId}", container="tidb"} |~ "(?i)UUID"`)}
-        <div className="cheat-sheet-item__label">
-          If the search expression is regex and contains backslash <code>\</code>, the expression should be wrapped by
-          backticks <code>`</code> instead of double quotes <code>"</code>.
-        </div>
-        {renderExpression(`{namespace="tidb${clusterId}", container="tidb"} |~ ` + '`uuid\\S`')}
       </div>
 
       <br />
