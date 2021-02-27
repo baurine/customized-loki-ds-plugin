@@ -273,7 +273,11 @@ export default function ExploreQueryEditor(props: Props) {
       const isRegex = trimSearch.length > 2 && trimSearch.startsWith('/') && trimSearch.endsWith('/');
       if (isRegex) {
         const str = trimSearch.substring(1, trimSearch.length - 1);
-        finalExpr += ' |~ `' + str + '`';
+        if (str.indexOf('\\') >= 0) {
+          finalExpr += ' |~ `' + str + '`';
+        } else {
+          finalExpr += ` |~ "${str}"`;
+        }
       } else {
         finalExpr += ` |= "${trimSearch}"`;
       }
