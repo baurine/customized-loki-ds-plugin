@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.9
+
+[PR #6](https://github.com/baurine/customized-loki-ds-plugin/pull/6)
+
+- Fix the plugin validator warnings, prepare for publishing to grafana
+
 ## 0.0.8
 
 [PR #5](https://github.com/baurine/customized-loki-ds-plugin/pull/5)
@@ -13,6 +19,7 @@
 
 - Replace most `=~` to `=`, support normal and regex search string both
 - Refine Help page
+
 ## 0.0.6
 
 - Support line limit option
