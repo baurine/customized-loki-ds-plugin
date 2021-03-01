@@ -1,6 +1,6 @@
 {
   "name": "pingcap-customized-loki",
-  "version": "1.0.0",
+  "version": "0.0.9",
   "description": "a customized loki datasource plugin for improving explore use experience",
   "scripts": {
     "build": "grafana-toolkit plugin:build",
@@ -12,10 +12,10 @@
   "author": "PingCAP",
   "license": "Apache-2.0",
   "devDependencies": {
-    "@grafana/data": "latest",
-    "@grafana/runtime": "latest",
-    "@grafana/toolkit": "latest",
-    "@grafana/ui": "latest",
+    "@grafana/data": "7.4.0",
+    "@grafana/runtime": "7.4.0",
+    "@grafana/toolkit": "7.4.0",
+    "@grafana/ui": "7.4.0",
     "@testing-library/jest-dom": "5.4.0",
     "@testing-library/react": "^10.0.2",
     "@types/lodash": "latest"

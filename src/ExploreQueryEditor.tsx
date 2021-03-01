@@ -10,7 +10,7 @@ import './style.css';
 
 export type Props = ExploreQueryFieldProps<DataSource, MyQuery, MyDataSourceOptions>;
 
-export function ExploreQueryEditor(props: Props) {
+export default function ExploreQueryEditor(props: Props) {
   const { query, datasource, onChange, onRunQuery } = props;
 
   const [tenantOptions, setTenantOptions] = useState<SelectableValue[]>([]);
@@ -26,12 +26,15 @@ export function ExploreQueryEditor(props: Props) {
   const [loadingPod, setLoadingPod] = useState(false);
 
   const logTypeOptions: SelectableValue[] = [
-    { value: 'pd|tidb|tikv', label: 'general' },
+    { value: 'tidb', label: 'tidb' },
+    { value: 'tikv', label: 'tikv' },
+    { value: 'pd', label: 'pd' },
+    { value: 'tiflash', label: 'tiflash' },
     { value: 'slowlog', label: 'slowlog' },
     { value: 'rocksdblog', label: 'rocksdblog' },
     { value: 'raftlog', label: 'raftlog' },
   ];
-  const [selectedLogType, setSelectedLogType] = useState<SelectableValue | undefined>(logTypeOptions[0]);
+  const [selectedLogType, setSelectedLogType] = useState<SelectableValue | undefined>(logTypeOptions.slice(0, 3));
 
   const [search, setSearch] = useState('');
 
@@ -39,7 +42,7 @@ export function ExploreQueryEditor(props: Props) {
 
   const onFilterClick = (name: string) => {
     // remove filter
-    setFilters(filters.filter(f => f !== name));
+    setFilters(filters.filter((f) => f !== name));
     setTimeout(() => {
       runQueryRef.current!();
     }, 300);
@@ -54,6 +57,14 @@ export function ExploreQueryEditor(props: Props) {
     }
   };
 
+  const onLineLimitChange = (event: any) => {
+    const str = event.currentTarget.value;
+    const val = parseInt(str.trim(), 10);
+    if (val > 0 && val <= lokiMaxLines) {
+      onChange?.({ ...query, maxLines: val });
+    }
+  };
+
   const onBlur = () => {};
 
   useEffect(() => {
@@ -62,7 +73,7 @@ export function ExploreQueryEditor(props: Props) {
       const tenantsRes = await promDS.metricFindQuery!('dbaas_tenant_info{status="active"}');
       const tenaneIdSet = new Set<string>();
       const tenantOptions: SelectableValue[] = [];
-      tenantsRes.forEach(res => {
+      tenantsRes.forEach((res) => {
         const m = res.text.match(/.*name="([^"]*).*,tenant="([^"]*).*/);
         if (m) {
           const tenantName = m[1];
@@ -87,14 +98,19 @@ export function ExploreQueryEditor(props: Props) {
         setSelectedTenant(tenantOptions[0]);
       }
     }
-    try {
-      setLoadingTenant(true);
-      queryTenants();
-    } catch (err) {
-      console.log(err);
-    } finally {
-      setLoadingTenant(false);
+
+    async function fetch() {
+      try {
+        setLoadingTenant(true);
+        await queryTenants();
+      } catch (err) {
+        console.log(err);
+      } finally {
+        setLoadingTenant(false);
+      }
     }
+
+    fetch();
   }, [datasource]);
 
   useEffect(() => {
@@ -110,7 +126,7 @@ export function ExploreQueryEditor(props: Props) {
       const clustersRes = await promDS.metricFindQuery!(`dbaas_tidb_cluster_info{tenant="${selectedTenantId}"}`);
       const clusterIdSet = new Set<string>();
       const clusterOptions: SelectableValue[] = [];
-      clustersRes.forEach(res => {
+      clustersRes.forEach((res) => {
         const m = res.text.match(/.*cluster_id="([^"]*).*,name="([^"]*).*/);
         if (m) {
           const clusterId = m[1];
@@ -136,14 +152,18 @@ export function ExploreQueryEditor(props: Props) {
       }
     }
 
-    try {
-      setLoadingCluster(true);
-      queryClusters();
-    } catch (err) {
-      console.log(err);
-    } finally {
-      setLoadingCluster(false);
+    async function fetch() {
+      try {
+        setLoadingCluster(true);
+        await queryClusters();
+      } catch (err) {
+        console.log(err);
+      } finally {
+        setLoadingCluster(false);
+      }
     }
+
+    fetch();
   }, [datasource, selectedTenant]);
 
   useEffect(() => {
@@ -161,7 +181,7 @@ export function ExploreQueryEditor(props: Props) {
       );
       const podNames = new Set<string>();
       const podOptions: SelectableValue[] = [];
-      podsRes.forEach(res => {
+      podsRes.forEach((res) => {
         const m = res.text.match(/.*pod="([^"]*).*/);
         if (m) {
           const podName = m[1];
@@ -175,19 +195,23 @@ export function ExploreQueryEditor(props: Props) {
         return a.value > b.value ? 1 : -1;
       });
       setPodOptions(podOptions);
-      if (podOptions.length > 0) {
-        setSelectedPod(podOptions[0]);
+      // if (podOptions.length > 0) {
+      //   setSelectedPod(podOptions[0]);
+      // }
+    }
+
+    async function fetch() {
+      try {
+        setLoadingPod(true);
+        await queryPods();
+      } catch (err) {
+        console.log(err);
+      } finally {
+        setLoadingPod(false);
       }
     }
 
-    try {
-      setLoadingPod(true);
-      queryPods();
-    } catch (err) {
-      console.log(err);
-    } finally {
-      setLoadingPod(false);
-    }
+    fetch();
   }, [datasource, selectedCluster]);
 
   const runQueryRef = useRef<() => void>();
@@ -217,21 +241,65 @@ export function ExploreQueryEditor(props: Props) {
   useEffect(() => {
     let exprArr: string[] = [];
     if (selectedCluster) {
-      exprArr.push(`namespace=~".*${selectedCluster.value}"`);
+      exprArr.push(`namespace="tidb${selectedCluster.value}"`);
     } else {
       // if not select a target cluster, it is expected to return empty logs
       exprArr.push(`namespace="unknown"`);
     }
+
+    let logTypes = '';
+    if (Array.isArray(selectedLogType)) {
+      // when select multiple LogType
+      logTypes = selectedLogType.map((item) => item.value).join('|');
+    } else {
+      logTypes = selectedLogType?.value || '';
+    }
+    if (logTypes) {
+      if (logTypes.indexOf('|') > 0) {
+        exprArr.push(`container=~"${logTypes}"`);
+      } else {
+        exprArr.push(`container="${logTypes}"`);
+      }
+    }
+
     if (selectedPod) {
-      exprArr.push(`instance=~"${selectedPod.value}"`);
+      exprArr.push(`instance="${selectedPod.value}"`);
     }
-    if (selectedLogType) {
-      exprArr.push(`container=~"${selectedLogType.value}"`);
+
+    filters.forEach((f) => exprArr.push(f));
+    let finalExpr = `{${exprArr.join(', ')}}`;
+    let trimSearch = search.trim();
+    if (trimSearch) {
+      const isRegex = trimSearch.length > 2 && trimSearch.startsWith('/') && trimSearch.endsWith('/');
+      if (isRegex) {
+        const str = trimSearch.substring(1, trimSearch.length - 1);
+        if (str.indexOf('\\') >= 0) {
+          finalExpr += ' |~ `' + str + '`';
+        } else {
+          finalExpr += ` |~ "${str}"`;
+        }
+      } else {
+        finalExpr += ` |= "${trimSearch}"`;
+      }
     }
-    filters.forEach(f => exprArr.push(f));
-    const finalExpr = `{${exprArr.join(', ')}} |~ "${search}"`;
     changeQueryRef.current!(finalExpr);
   }, [selectedCluster, selectedPod, selectedLogType, search, filters]);
+
+  const [lineLimitTooltip, setLineLimitTooltip] = useState('Loading...');
+  const [lokiMaxLines, setLokiMaxLines] = useState(1000);
+  useEffect(() => {
+    async function queryLokiMaxLines() {
+      const lokiDS = await datasource.getLokiDS();
+      if (Object.keys(lokiDS).indexOf('maxLines') >= 0) {
+        const maxLines = (lokiDS as any)['maxLines'];
+        const tooltip = `The value can't beyond ${maxLines} which is configured when adding ${lokiDS.name} data source`;
+        setLineLimitTooltip(tooltip);
+        setLokiMaxLines(maxLines);
+      }
+    }
+
+    queryLokiMaxLines();
+  }, [datasource]);
 
   return (
     <div>
@@ -246,7 +314,7 @@ export function ExploreQueryEditor(props: Props) {
             value={selectedTenant}
           />
         </InlineField>
-        <InlineField label="Cluster">
+        <InlineField label="Cluster" required={true} tooltip="Respond to namespace label, required.">
           <Select
             isLoading={loadingCluster}
             isClearable
@@ -256,7 +324,20 @@ export function ExploreQueryEditor(props: Props) {
             value={selectedCluster}
           />
         </InlineField>
-        <InlineField label="Pod">
+        <InlineField label="LogType" tooltip="Aka container name, respond to container label">
+          <Select
+            isClearable
+            width={32}
+            onChange={setSelectedLogType}
+            options={logTypeOptions}
+            value={selectedLogType}
+            isMulti={true}
+          />
+        </InlineField>
+        <InlineField
+          label="Instance"
+          tooltip="Aka pod name, each pod represents a tidb/tikv/pd instance, respond to instance label"
+        >
           <Select
             isLoading={loadingPod}
             isClearable
@@ -266,30 +347,37 @@ export function ExploreQueryEditor(props: Props) {
             value={selectedPod}
           />
         </InlineField>
-        <InlineField label="LogType">
-          <Select
-            isClearable
-            width={16}
-            onChange={setSelectedLogType}
-            options={logTypeOptions}
-            value={selectedLogType}
+      </div>
+      <div className="query-field">
+        <InlineField
+          label="Search"
+          tooltip='Support search by normal string or regex, the regex should be wrapped by "/", such as /error\S/. Both are case-sensitive.'
+        >
+          <Input width={20} value={search} onChange={(e) => setSearch(e.currentTarget.value)} css="" />
+        </InlineField>
+        <QueryField
+          portalOrigin="customized-loki"
+          onChange={onQueryChange}
+          onRunQuery={props.onRunQuery}
+          onBlur={onBlur}
+          query={query.expr || ''}
+          placeholder="Enter a query"
+        />
+        <InlineField label="Line limit" tooltip={lineLimitTooltip} style={{ marginLeft: 4 }}>
+          <Input
+            width={8}
+            placeholder="auto"
+            value={query.maxLines || lokiMaxLines}
+            onChange={onLineLimitChange}
+            css=""
           />
         </InlineField>
-        <InlineField label="Search">
-          <Input value={search} onChange={e => setSearch(e.currentTarget.value)} css="" />
-        </InlineField>
       </div>
-      <QueryField
-        portalOrigin="customized-loki"
-        onChange={onQueryChange}
-        onRunQuery={props.onRunQuery}
-        onBlur={onBlur}
-        query={query.expr || ''}
-        placeholder="Enter a query"
-      />
-      <InlineField label="Filters" className="filters">
-        <TagList tags={filters} className="tags" onClick={onFilterClick} />
-      </InlineField>
+      {filters.length > 0 && (
+        <InlineField label="Filters" className="filters" tooltip="Click the filetr to remove it">
+          <TagList tags={filters} className="tags" onClick={onFilterClick} />
+        </InlineField>
+      )}
     </div>
   );
 }

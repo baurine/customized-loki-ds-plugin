@@ -1,5 +1,4 @@
-// import { Observable, of } from 'rxjs';
-import { Observable, of } from '@grafana/data/node_modules/rxjs';
+import { Observable, of } from 'rxjs';
 
 import {
   DataQueryRequest,
@@ -21,17 +20,28 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
 
   constructor(private instanceSettings: DataSourceInstanceSettings<MyDataSourceOptions>) {
     super(instanceSettings);
+    this.getLokiDS();
+  }
 
+  getLokiDS(): Promise<DataSourceApi> {
+    if (this.lokiDS) {
+      return Promise.resolve(this.lokiDS);
+    }
     const {
-      jsonData: { lokiDataSourceUid },
+      jsonData: { lokiDataSourceName },
     } = this.instanceSettings;
     const dataSourceSrv = getDataSourceSrv();
-    const lokiDsSetting = dataSourceSrv.getInstanceSettings(lokiDataSourceUid);
+    // It seems this step is redundant, because `lokiDsSetting.name` equals `lokiDataSourceName`.
+    // It is true because we used `lokiDataSourceUid` instead of `lokiDataSourceName` before.
+    // Keep this logic in case we will use `lokiDataSourceUid` back in the future.
+    const lokiDsSetting = dataSourceSrv.getInstanceSettings(lokiDataSourceName);
     if (lokiDsSetting) {
-      dataSourceSrv.get(lokiDsSetting.name).then(ds => {
+      return dataSourceSrv.get(lokiDsSetting.name).then((ds) => {
         this.lokiDS = ds as any;
+        return ds as any;
       });
     }
+    throw Error('Has no loki datasource');
   }
 
   getPromDS(): Promise<DataSourceApi> {
@@ -39,12 +49,12 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
       return Promise.resolve(this.promDS);
     }
     const {
-      jsonData: { promDataSourceUid },
+      jsonData: { promDataSourceName },
     } = this.instanceSettings;
     const dataSourceSrv = getDataSourceSrv();
-    const promDsSetting = dataSourceSrv.getInstanceSettings(promDataSourceUid);
+    const promDsSetting = dataSourceSrv.getInstanceSettings(promDataSourceName);
     if (promDsSetting) {
-      return dataSourceSrv.get(promDsSetting.name).then(ds => {
+      return dataSourceSrv.get(promDsSetting.name).then((ds) => {
         this.promDS = ds as any;
         return ds as any;
       });
@@ -64,22 +74,22 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
 
   async testDatasource() {
     const {
-      jsonData: { lokiDataSourceUid, promDataSourceUid },
+      jsonData: { lokiDataSourceName, promDataSourceName },
     } = this.instanceSettings;
 
-    if (!promDataSourceUid) {
+    if (!promDataSourceName) {
       throw new Error('Promethues datasource is empty!');
     }
-    if (!lokiDataSourceUid) {
+    if (!lokiDataSourceName) {
       throw new Error('Loki datasource is empty!');
     }
 
     const dataSourceSrv = getDataSourceSrv();
-    const promDsSetting = dataSourceSrv.getInstanceSettings(promDataSourceUid);
+    const promDsSetting = dataSourceSrv.getInstanceSettings(promDataSourceName);
     if (!promDsSetting) {
       throw new Error(`Target promethues datasource doesn't exist anymore !`);
     }
-    const lokiDsSetting = dataSourceSrv.getInstanceSettings(lokiDataSourceUid);
+    const lokiDsSetting = dataSourceSrv.getInstanceSettings(lokiDataSourceName);
     if (!lokiDsSetting) {
       throw new Error(`Target loki datasource doesn't exist anymore !`);
     }

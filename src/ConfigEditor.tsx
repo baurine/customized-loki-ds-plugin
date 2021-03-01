@@ -7,12 +7,12 @@ import { MyDataSourceOptions } from './types';
 
 interface Props extends DataSourcePluginOptionsEditorProps<MyDataSourceOptions> {}
 
-export function ConfigEditor(props: Props) {
+export default function ConfigEditor(props: Props) {
   const [dsList, setDsList] = useState<SelectableValue[]>([]);
   const {
     options: {
       id: selfId, // plugin self id
-      jsonData: { promDataSourceUid, lokiDataSourceUid },
+      jsonData: { promDataSourceName, lokiDataSourceName },
     },
   } = props;
 
@@ -20,10 +20,10 @@ export function ConfigEditor(props: Props) {
     const dsSrv = getDataSourceSrv();
     const allDS = dsSrv.getList();
     const dsList: SelectableValue[] = allDS
-      .filter(ds => ds.uid !== undefined && ds.id !== selfId)
-      .map(ds => ({
+      .filter((ds) => ds.uid !== undefined && ds.id !== selfId)
+      .map((ds) => ({
         label: ds.name,
-        value: ds.uid,
+        value: ds.name,
       }));
     setDsList(dsList);
   }, [selfId]);
@@ -32,7 +32,7 @@ export function ConfigEditor(props: Props) {
     const { onOptionsChange, options } = props;
     const jsonData = {
       ...options.jsonData,
-      promDataSourceUid: v?.value || '',
+      promDataSourceName: v?.value || '',
     };
     onOptionsChange({ ...options, jsonData });
   };
@@ -41,7 +41,7 @@ export function ConfigEditor(props: Props) {
     const { onOptionsChange, options } = props;
     const jsonData = {
       ...options.jsonData,
-      lokiDataSourceUid: v?.value || '',
+      lokiDataSourceName: v?.value || '',
     };
     onOptionsChange({ ...options, jsonData });
   };
@@ -52,14 +52,14 @@ export function ConfigEditor(props: Props) {
         <InlineLabel width={16} tooltip="Select a Prometheus DataSource">
           Prometheus
         </InlineLabel>
-        <Select isClearable={true} options={dsList} value={promDataSourceUid} onChange={onPromDSChange} width={36} />
+        <Select isClearable={true} options={dsList} value={promDataSourceName} onChange={onPromDSChange} width={36} />
       </div>
 
       <div className="gf-form">
         <InlineLabel width={16} tooltip="Select a Loki DataSource">
           Loki
         </InlineLabel>
-        <Select isClearable={true} options={dsList} value={lokiDataSourceUid} onChange={onLokiDSChange} width={36} />
+        <Select isClearable={true} options={dsList} value={lokiDataSourceName} onChange={onLokiDSChange} width={36} />
       </div>
     </div>
   );
