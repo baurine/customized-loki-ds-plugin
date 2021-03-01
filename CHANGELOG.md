@@ -2,7 +2,7 @@
 
 ## 0.0.9
 
-[PR #6](https://github.com/baurine/customized-loki-ds-plugin/pull/6)
+[PR #7](https://github.com/baurine/customized-loki-ds-plugin/pull/7)
 
 - Fix the plugin validator warnings, prepare for publishing to grafana
 
