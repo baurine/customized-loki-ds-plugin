@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 
 import { ExploreQueryFieldProps, SelectableValue } from '@grafana/data';
 import { InlineField, Input, QueryField, Select, TagList } from '@grafana/ui';
@@ -11,7 +11,7 @@ import './style.css';
 export type Props = ExploreQueryFieldProps<DataSource, MyQuery, MyDataSourceOptions>;
 
 export default function ExploreQueryEditor(props: Props) {
-  const { query, datasource, onChange, onRunQuery } = props;
+  const { query, datasource, onChange, onRunQuery, range: curTimeRange } = props;
 
   const [tenantOptions, setTenantOptions] = useState<SelectableValue[]>([]);
   const [selectedTenant, setSelectedTenant] = useState<SelectableValue | undefined>(undefined);
@@ -67,6 +67,16 @@ export default function ExploreQueryEditor(props: Props) {
 
   const onBlur = () => {};
 
+  // calculate time range changes
+  const curTimeRangeStr = useMemo(() => {
+    if (curTimeRange === undefined) {
+      return '';
+    }
+    const { raw } = curTimeRange;
+    return `${raw.from.toString()}~${raw.to.toString()}`;
+  }, [curTimeRange]);
+  // console.log('cur time range:', curTimeRangeStr);
+
   useEffect(() => {
     async function queryTenants() {
       const promDS = await datasource.getPromDS();
@@ -111,7 +121,7 @@ export default function ExploreQueryEditor(props: Props) {
     }
 
     fetch();
-  }, [datasource]);
+  }, [datasource, curTimeRangeStr]);
 
   useEffect(() => {
     async function queryClusters() {
@@ -164,7 +174,7 @@ export default function ExploreQueryEditor(props: Props) {
     }
 
     fetch();
-  }, [datasource, selectedTenant]);
+  }, [datasource, selectedTenant, curTimeRangeStr]);
 
   useEffect(() => {
     async function queryPods() {
@@ -212,7 +222,7 @@ export default function ExploreQueryEditor(props: Props) {
     }
 
     fetch();
-  }, [datasource, selectedCluster]);
+  }, [datasource, selectedCluster, curTimeRangeStr]);
 
   const runQueryRef = useRef<() => void>();
   runQueryRef.current = () => {
