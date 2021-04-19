@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 
 import { ExploreQueryFieldProps, SelectableValue } from '@grafana/data';
-import { InlineField, Input, QueryField, Select, TagList } from '@grafana/ui';
+import { Button, InlineField, Input, QueryField, Select, TagList } from '@grafana/ui';
 
 import { DataSource, ADD_FILTER_EVENT } from './datasource';
 import { MyQuery, MyDataSourceOptions } from './types';
@@ -295,6 +295,29 @@ export default function ExploreQueryEditor(props: Props) {
     changeQueryRef.current!(finalExpr);
   }, [selectedCluster, selectedPod, selectedLogType, search, filters]);
 
+  // logcli
+  const [logcliCmd, setLogcliCmd] = useState('');
+  useEffect(() => {
+    if (curTimeRange === undefined) {
+      setLogcliCmd('');
+      return;
+    }
+    const { from, to } = curTimeRange;
+    const rightBracePos = query.expr.indexOf('}');
+    const queryStr = query.expr.slice(0, rightBracePos + 1);
+    const fullLogcliCmd = `logcli query '${queryStr}' --limit=100000 --batch=4000 --timezone=UTC --from ${from.toISOString()} --to ${to.toISOString()} --output=raw > loki.log`;
+    setLogcliCmd(fullLogcliCmd);
+  }, [query.expr, curTimeRange]);
+
+  const [copied, setCopied] = useState(false);
+  function copyLogcli() {
+    navigator.clipboard.writeText(logcliCmd);
+    setCopied(true);
+    setTimeout(() => {
+      setCopied(false);
+    }, 2000);
+  }
+
   const [lineLimitTooltip, setLineLimitTooltip] = useState('Loading...');
   const [lokiMaxLines, setLokiMaxLines] = useState(1000);
   useEffect(() => {
@@ -382,6 +405,15 @@ export default function ExploreQueryEditor(props: Props) {
             css=""
           />
         </InlineField>
+      </div>
+      <div className="query-field">
+        <InlineField label="logcli" tooltip="logcli command, copy and run it in the command line">
+          <div></div>
+        </InlineField>
+        <QueryField portalOrigin="customized-loki-logcli" onChange={(val) => setLogcliCmd(val)} query={logcliCmd} />
+        <Button style={{ marginLeft: 4 }} onClick={copyLogcli}>
+          {copied ? 'Copied' : 'Copy'}
+        </Button>
       </div>
       {filters.length > 0 && (
         <InlineField label="Filters" className="filters" tooltip="Click the filetr to remove it">
