@@ -305,7 +305,8 @@ export default function ExploreQueryEditor(props: Props) {
     const { from, to } = curTimeRange;
     const rightBracePos = query.expr.indexOf('}');
     const queryStr = query.expr.slice(0, rightBracePos + 1);
-    const fullLogcliCmd = `logcli query '${queryStr}' --limit=100000 --batch=4000 --timezone=UTC --from ${from.toISOString()} --to ${to.toISOString()} --output=raw > loki.log`;
+    const logFileName = to.toISOString().replace(/:|\./g, '-');
+    const fullLogcliCmd = `logcli query '${queryStr}' --limit=100000 --batch=4000 --timezone=UTC --from ${from.toISOString()} --to ${to.toISOString()} --output=raw > ${logFileName}.log`;
     setLogcliCmd(fullLogcliCmd);
   }, [query.expr, curTimeRange]);
 
@@ -407,7 +408,10 @@ export default function ExploreQueryEditor(props: Props) {
         </InlineField>
       </div>
       <div className="query-field">
-        <InlineField label="logcli" tooltip="logcli command, copy and run it in the command line">
+        <InlineField
+          label="logcli"
+          tooltip="logcli is a command line tool for exporting logs, see below help panel to get details"
+        >
           <div></div>
         </InlineField>
         <QueryField portalOrigin="customized-loki-logcli" onChange={(val) => setLogcliCmd(val)} query={logcliCmd} />
