@@ -181,7 +181,7 @@ export default function QueryEditorHelp(props: QueryEditorHelpProps) {
               target="logcli"
               style={{ color: 'blue' }}
             >
-              Logcli offical document
+              Logcli official document
             </a>
           </li>
         </ul>
