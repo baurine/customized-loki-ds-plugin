@@ -296,22 +296,20 @@ export default function ExploreQueryEditor(props: Props) {
   }, [selectedCluster, selectedPod, selectedLogType, search, filters]);
 
   // logcli
-  const [logcliCmd, setLogcliCmd] = useState('');
-  useEffect(() => {
-    if (curTimeRange === undefined) {
-      setLogcliCmd('');
-      return;
-    }
-    const { from, to } = curTimeRange;
-    const rightBracePos = query.expr.indexOf('}');
-    const queryStr = query.expr.slice(0, rightBracePos + 1);
-    const logFileName = to.toISOString().replace(/:|\./g, '-');
-    const fullLogcliCmd = `logcli query '${queryStr}' --limit=100000 --batch=4000 --timezone=UTC --from ${from.toISOString()} --to ${to.toISOString()} --output=raw > ${logFileName}.log`;
-    setLogcliCmd(fullLogcliCmd);
-  }, [query.expr, curTimeRange]);
-
   const [copied, setCopied] = useState(false);
   function copyLogcli() {
+    let timeRangeParams = '';
+    let logFileName = 'loki';
+    if (curTimeRange) {
+      const { from, to } = curTimeRange;
+      logFileName = to.toISOString().replace(/:|\./g, '-');
+      timeRangeParams = `--timezone=UTC --from ${from.toISOString()} --to ${to.toISOString()}`;
+    }
+
+    const rightBracePos = (query.expr || '').indexOf('}');
+    const queryStr = query.expr.slice(0, rightBracePos + 1);
+    const logcliCmd = `logcli query '${queryStr}' --limit=100000 --batch=40000 ${timeRangeParams} --output=raw > ${logFileName}.log`;
+
     navigator.clipboard.writeText(logcliCmd);
     setCopied(true);
     setTimeout(() => {
