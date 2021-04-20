@@ -162,7 +162,7 @@ export default function QueryEditorHelp(props: QueryEditorHelpProps) {
       </div>
 
       <br />
-      <h2>Logcli</h2>
+      <h2>Export logs</h2>
       <div className="logcli-help-desc">
         Logcli is a command line tool for exporting logs to local. View below links to learn how to use it.
         <ul>

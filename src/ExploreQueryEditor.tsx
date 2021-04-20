@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 
 import { ExploreQueryFieldProps, SelectableValue } from '@grafana/data';
-import { Button, InlineField, Input, QueryField, Select, TagList } from '@grafana/ui';
+import { Button, InlineField, Input, QueryField, Select, TagList, Tooltip } from '@grafana/ui';
 
 import { DataSource, ADD_FILTER_EVENT } from './datasource';
 import { MyQuery, MyDataSourceOptions } from './types';
@@ -407,23 +407,18 @@ export default function ExploreQueryEditor(props: Props) {
           />
         </InlineField>
       </div>
-      <div className="query-field">
-        <InlineField
-          label="logcli"
-          tooltip="logcli is a command line tool for exporting logs, see below help panel to get details"
-        >
-          <div></div>
-        </InlineField>
-        <QueryField portalOrigin="customized-loki-logcli" onChange={(val) => setLogcliCmd(val)} query={logcliCmd} />
-        <Button style={{ marginLeft: 4 }} onClick={copyLogcli}>
-          {copied ? 'Copied' : 'Copy'}
-        </Button>
-      </div>
       {filters.length > 0 && (
         <InlineField label="Filters" className="filters" tooltip="Click the filetr to remove it">
           <TagList tags={filters} className="tags" onClick={onFilterClick} />
         </InlineField>
       )}
+      <div className="query-field">
+        <Tooltip content="Exporting logs by logcli command line tool, see below help panel to get details.">
+          <Button size="sm" onClick={copyLogcli}>
+            {copied ? 'Copied' : 'Copy'} logs export command
+          </Button>
+        </Tooltip>
+      </div>
     </div>
   );
 }
