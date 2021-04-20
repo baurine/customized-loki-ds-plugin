@@ -3,6 +3,8 @@ import { QueryEditorHelpProps, DataQuery } from '@grafana/data';
 
 import { DataSource } from './datasource';
 
+import './style.css';
+
 export default function QueryEditorHelp(props: QueryEditorHelpProps) {
   const { datasource } = props;
 
@@ -157,6 +159,32 @@ export default function QueryEditorHelp(props: QueryEditorHelpProps) {
           Loki LogQL
         </a>
         , get detail from its document.
+      </div>
+
+      <br />
+      <h2>Export logs</h2>
+      <div className="logcli-help-desc">
+        Logcli is a command line tool for exporting logs to local. View below links to learn how to use it.
+        <ul>
+          <li>
+            <a
+              href="https://docs.google.com/document/d/11XFTJkhDsGf0GEqipnC2ZRoNysXK2Hajlo8wrU21NQc/edit#heading=h.w4uka2ohevsq"
+              target="logcli"
+              style={{ color: 'blue' }}
+            >
+              Internal handbook
+            </a>
+          </li>
+          <li>
+            <a
+              href="https://grafana.com/docs/loki/latest/getting-started/logcli/"
+              target="logcli"
+              style={{ color: 'blue' }}
+            >
+              Logcli official document
+            </a>
+          </li>
+        </ul>
       </div>
     </div>
   );

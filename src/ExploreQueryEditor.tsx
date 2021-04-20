@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 
 import { ExploreQueryFieldProps, SelectableValue } from '@grafana/data';
-import { InlineField, Input, QueryField, Select, TagList } from '@grafana/ui';
+import { Button, InlineField, Input, QueryField, Select, TagList, Tooltip } from '@grafana/ui';
 
 import { DataSource, ADD_FILTER_EVENT } from './datasource';
 import { MyQuery, MyDataSourceOptions } from './types';
@@ -11,7 +11,7 @@ import './style.css';
 export type Props = ExploreQueryFieldProps<DataSource, MyQuery, MyDataSourceOptions>;
 
 export default function ExploreQueryEditor(props: Props) {
-  const { query, datasource, onChange, onRunQuery } = props;
+  const { query, datasource, onChange, onRunQuery, range: curTimeRange } = props;
 
   const [tenantOptions, setTenantOptions] = useState<SelectableValue[]>([]);
   const [selectedTenant, setSelectedTenant] = useState<SelectableValue | undefined>(undefined);
@@ -67,6 +67,16 @@ export default function ExploreQueryEditor(props: Props) {
 
   const onBlur = () => {};
 
+  // calculate time range changes
+  const curTimeRangeStr = useMemo(() => {
+    if (curTimeRange === undefined) {
+      return '';
+    }
+    const { raw } = curTimeRange;
+    return `${raw.from.toString()}~${raw.to.toString()}`;
+  }, [curTimeRange]);
+  // console.log('cur time range:', curTimeRangeStr);
+
   useEffect(() => {
     async function queryTenants() {
       const promDS = await datasource.getPromDS();
@@ -111,7 +121,7 @@ export default function ExploreQueryEditor(props: Props) {
     }
 
     fetch();
-  }, [datasource]);
+  }, [datasource, curTimeRangeStr]);
 
   useEffect(() => {
     async function queryClusters() {
@@ -164,7 +174,7 @@ export default function ExploreQueryEditor(props: Props) {
     }
 
     fetch();
-  }, [datasource, selectedTenant]);
+  }, [datasource, selectedTenant, curTimeRangeStr]);
 
   useEffect(() => {
     async function queryPods() {
@@ -212,7 +222,7 @@ export default function ExploreQueryEditor(props: Props) {
     }
 
     fetch();
-  }, [datasource, selectedCluster]);
+  }, [datasource, selectedCluster, curTimeRangeStr]);
 
   const runQueryRef = useRef<() => void>();
   runQueryRef.current = () => {
@@ -284,6 +294,28 @@ export default function ExploreQueryEditor(props: Props) {
     }
     changeQueryRef.current!(finalExpr);
   }, [selectedCluster, selectedPod, selectedLogType, search, filters]);
+
+  // logcli
+  const [copied, setCopied] = useState(false);
+  function copyLogcli() {
+    let timeRangeParams = '';
+    let logFileName = 'loki';
+    if (curTimeRange) {
+      const { from, to } = curTimeRange;
+      logFileName = to.toISOString().replace(/:|\./g, '-');
+      timeRangeParams = `--timezone=UTC --from ${from.toISOString()} --to ${to.toISOString()}`;
+    }
+
+    const rightBracePos = (query.expr || '').indexOf('}');
+    const queryStr = query.expr.slice(0, rightBracePos + 1);
+    const logcliCmd = `logcli query '${queryStr}' --limit=100000 --batch=4000 ${timeRangeParams} --output=raw > ${logFileName}.log`;
+
+    navigator.clipboard.writeText(logcliCmd);
+    setCopied(true);
+    setTimeout(() => {
+      setCopied(false);
+    }, 2000);
+  }
 
   const [lineLimitTooltip, setLineLimitTooltip] = useState('Loading...');
   const [lokiMaxLines, setLokiMaxLines] = useState(1000);
@@ -378,6 +410,13 @@ export default function ExploreQueryEditor(props: Props) {
           <TagList tags={filters} className="tags" onClick={onFilterClick} />
         </InlineField>
       )}
+      <div className="query-field">
+        <Tooltip content="Exporting logs by logcli command line tool, see below help panel to get details.">
+          <Button size="sm" onClick={copyLogcli}>
+            {copied ? 'Copied' : 'Copy'} logs export command
+          </Button>
+        </Tooltip>
+      </div>
     </div>
   );
 }
