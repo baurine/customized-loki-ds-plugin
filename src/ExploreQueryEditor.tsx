@@ -308,7 +308,7 @@ export default function ExploreQueryEditor(props: Props) {
 
     const rightBracePos = (query.expr || '').indexOf('}');
     const queryStr = query.expr.slice(0, rightBracePos + 1);
-    const logcliCmd = `logcli query '${queryStr}' --limit=100000 --batch=40000 ${timeRangeParams} --output=raw > ${logFileName}.log`;
+    const logcliCmd = `logcli query '${queryStr}' --limit=100000 --batch=4000 ${timeRangeParams} --output=raw > ${logFileName}.log`;
 
     navigator.clipboard.writeText(logcliCmd);
     setCopied(true);
