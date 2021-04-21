@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.0
+
+[PR #9](https://github.com/baurine/customized-loki-ds-plugin/pull/9)
+
+- Re-fetch the select options when the time range changes
+- Auto generate the logcli command
+
+[PR #11](https://github.com/baurine/customized-loki-ds-plugin/pull/11)
+
+- Save all the selected options to the query object to support share the link
+
 ## 0.0.9
 
 [PR #7](https://github.com/baurine/customized-loki-ds-plugin/pull/7)
