@@ -323,6 +323,7 @@ export default function ExploreQueryEditor(props: Props) {
       tenant: selectedTenant ? `${selectedTenant.label}\n${selectedTenant.value}` : undefined,
       cluster: selectedCluster ? `${selectedCluster.label}\n${selectedCluster.value}` : undefined,
       logTypes,
+      pod: selectedPod?.value,
       searchText: search,
       filters: filters.join('\n'),
       expr: finalExpr,
