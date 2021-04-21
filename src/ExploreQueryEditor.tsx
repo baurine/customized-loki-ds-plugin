@@ -52,7 +52,7 @@ export default function ExploreQueryEditor(props: Props) {
     if (logTypes === undefined) {
       return undefined;
     }
-    const logTypesArr = logTypes.split('\n');
+    const logTypesArr = logTypes.split('|');
     return logTypesArr.map((t) => ({ label: t, value: t }));
   });
 
