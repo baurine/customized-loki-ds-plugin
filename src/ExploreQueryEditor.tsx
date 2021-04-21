@@ -26,7 +26,7 @@ export default function ExploreQueryEditor(props: Props) {
   const { query, datasource, onChange, onRunQuery, range: curTimeRange } = props;
 
   const [tenantOptions, setTenantOptions] = useState<SelectableValue[]>([]);
-  const [loadingTenant, setLoadingTenant] = useState(false);
+  const [loadingTenants, setLoadingTenants] = useState(false);
   const [selectedTenant, setSelectedTenant] = useState<SelectableValue | undefined>(() => {
     const { tenant } = query;
     if (tenant === undefined) {
@@ -37,7 +37,7 @@ export default function ExploreQueryEditor(props: Props) {
   });
 
   const [clusterOptions, setClusterOptitons] = useState<SelectableValue[]>([]);
-  const [loadingCluster, setLoadingCluster] = useState(false);
+  const [loadingClusters, setLoadingClusters] = useState(false);
   const [selectedCluster, setSelectedCluster] = useState<SelectableValue | undefined>(() => {
     const { cluster } = query;
     if (cluster === undefined) {
@@ -57,7 +57,7 @@ export default function ExploreQueryEditor(props: Props) {
   });
 
   const [podOptions, setPodOptions] = useState<SelectableValue[]>([]);
-  const [loadingPod, setLoadingPod] = useState(false);
+  const [loadingPods, setLoadingPods] = useState(false);
   const [selectedPod, setSelectedPod] = useState<SelectableValue | undefined>(() => {
     const { pod } = query;
     if (pod === undefined) {
@@ -107,7 +107,6 @@ export default function ExploreQueryEditor(props: Props) {
     const { raw } = curTimeRange;
     return `${raw.from.toString()}~${raw.to.toString()}`;
   }, [curTimeRange]);
-  // console.log('cur time range:', curTimeRangeStr);
 
   useEffect(() => {
     async function queryTenants() {
@@ -143,12 +142,12 @@ export default function ExploreQueryEditor(props: Props) {
 
     async function fetch() {
       try {
-        setLoadingTenant(true);
+        setLoadingTenants(true);
         await queryTenants();
       } catch (err) {
         console.log(err);
       } finally {
-        setLoadingTenant(false);
+        setLoadingTenants(false);
       }
     }
 
@@ -195,12 +194,12 @@ export default function ExploreQueryEditor(props: Props) {
 
     async function fetch() {
       try {
-        setLoadingCluster(true);
+        setLoadingClusters(true);
         await queryClusters();
       } catch (err) {
         console.log(err);
       } finally {
-        setLoadingCluster(false);
+        setLoadingClusters(false);
       }
     }
 
@@ -239,12 +238,12 @@ export default function ExploreQueryEditor(props: Props) {
 
     async function fetch() {
       try {
-        setLoadingPod(true);
+        setLoadingPods(true);
         await queryPods();
       } catch (err) {
         console.log(err);
       } finally {
-        setLoadingPod(false);
+        setLoadingPods(false);
       }
     }
 
@@ -373,7 +372,7 @@ export default function ExploreQueryEditor(props: Props) {
       <div style={{ display: 'flex' }}>
         <InlineField label="Tenant">
           <Select
-            isLoading={loadingTenant}
+            isLoading={loadingTenants}
             isClearable
             width={16}
             onChange={setSelectedTenant}
@@ -383,7 +382,7 @@ export default function ExploreQueryEditor(props: Props) {
         </InlineField>
         <InlineField label="Cluster" required={true} tooltip="Respond to namespace label, required.">
           <Select
-            isLoading={loadingCluster}
+            isLoading={loadingClusters}
             isClearable
             width={16}
             onChange={setSelectedCluster}
@@ -406,7 +405,7 @@ export default function ExploreQueryEditor(props: Props) {
           tooltip="Aka pod name, each pod represents a tidb/tikv/pd instance, respond to instance label"
         >
           <Select
-            isLoading={loadingPod}
+            isLoading={loadingPods}
             isClearable
             width={16}
             onChange={setSelectedPod}
