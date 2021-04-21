@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0
+## 0.1.1
 
 [PR #9](https://github.com/baurine/customized-loki-ds-plugin/pull/9)
 
