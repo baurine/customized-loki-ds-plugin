@@ -4,6 +4,14 @@ import { DataQuery, DataSourceJsonData } from '@grafana/data';
 export interface MyQuery extends DataQuery {
   expr: string;
   maxLines?: number;
+
+  // other options
+  tenant?: string;
+  cluster?: string;
+  logTypes?: string;
+  pod?: string;
+  searchText?: string;
+  filters?: string;
 }
 
 /**

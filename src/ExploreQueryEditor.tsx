@@ -8,37 +8,69 @@ import { MyQuery, MyDataSourceOptions } from './types';
 
 import './style.css';
 
+/////////////////////
+
+const LOG_TYPE_OPTIONS: SelectableValue[] = [
+  'tidb',
+  'tikv',
+  'pd',
+  'tiflash',
+  'slowlog',
+  'rocksdblog',
+  'raftlog',
+].map((t) => ({ label: t, value: t }));
+
 export type Props = ExploreQueryFieldProps<DataSource, MyQuery, MyDataSourceOptions>;
 
 export default function ExploreQueryEditor(props: Props) {
   const { query, datasource, onChange, onRunQuery, range: curTimeRange } = props;
 
   const [tenantOptions, setTenantOptions] = useState<SelectableValue[]>([]);
-  const [selectedTenant, setSelectedTenant] = useState<SelectableValue | undefined>(undefined);
-  const [loadingTenant, setLoadingTenant] = useState(false);
+  const [loadingTenants, setLoadingTenants] = useState(false);
+  const [selectedTenant, setSelectedTenant] = useState<SelectableValue | undefined>(() => {
+    const { tenant } = query;
+    if (tenant === undefined) {
+      return undefined;
+    }
+    const [label, value] = tenant.split('\n');
+    return { label, value };
+  });
 
   const [clusterOptions, setClusterOptitons] = useState<SelectableValue[]>([]);
-  const [selectedCluster, setSelectedCluster] = useState<SelectableValue | undefined>(undefined);
-  const [loadingCluster, setLoadingCluster] = useState(false);
+  const [loadingClusters, setLoadingClusters] = useState(false);
+  const [selectedCluster, setSelectedCluster] = useState<SelectableValue | undefined>(() => {
+    const { cluster } = query;
+    if (cluster === undefined) {
+      return undefined;
+    }
+    const [label, value] = cluster.split('\n');
+    return { label, value };
+  });
+
+  const [selectedLogType, setSelectedLogType] = useState<SelectableValue | undefined>(() => {
+    const { logTypes } = query;
+    if (logTypes === undefined) {
+      return undefined;
+    }
+    const logTypesArr = logTypes.split('|');
+    return logTypesArr.map((t) => ({ label: t, value: t }));
+  });
 
   const [podOptions, setPodOptions] = useState<SelectableValue[]>([]);
-  const [selectedPod, setSelectedPod] = useState<SelectableValue | undefined>(undefined);
-  const [loadingPod, setLoadingPod] = useState(false);
+  const [loadingPods, setLoadingPods] = useState(false);
+  const [selectedPod, setSelectedPod] = useState<SelectableValue | undefined>(() => {
+    const { pod } = query;
+    if (pod === undefined) {
+      return undefined;
+    }
+    return { label: pod, value: pod };
+  });
 
-  const logTypeOptions: SelectableValue[] = [
-    { value: 'tidb', label: 'tidb' },
-    { value: 'tikv', label: 'tikv' },
-    { value: 'pd', label: 'pd' },
-    { value: 'tiflash', label: 'tiflash' },
-    { value: 'slowlog', label: 'slowlog' },
-    { value: 'rocksdblog', label: 'rocksdblog' },
-    { value: 'raftlog', label: 'raftlog' },
-  ];
-  const [selectedLogType, setSelectedLogType] = useState<SelectableValue | undefined>(logTypeOptions.slice(0, 3));
+  const [search, setSearch] = useState(query.searchText || '');
 
-  const [search, setSearch] = useState('');
-
-  const [filters, setFilters] = useState<string[]>([]);
+  const [filters, setFilters] = useState<string[]>(() =>
+    (query.filters || '').split('\n').filter((f) => f.trim() !== '')
+  );
 
   const onFilterClick = (name: string) => {
     // remove filter
@@ -75,7 +107,6 @@ export default function ExploreQueryEditor(props: Props) {
     const { raw } = curTimeRange;
     return `${raw.from.toString()}~${raw.to.toString()}`;
   }, [curTimeRange]);
-  // console.log('cur time range:', curTimeRangeStr);
 
   useEffect(() => {
     async function queryTenants() {
@@ -104,19 +135,19 @@ export default function ExploreQueryEditor(props: Props) {
         }
       });
       setTenantOptions(tenantOptions);
-      if (tenantOptions.length > 0) {
+      if (selectedTenant === undefined && tenantOptions.length > 0) {
         setSelectedTenant(tenantOptions[0]);
       }
     }
 
     async function fetch() {
       try {
-        setLoadingTenant(true);
+        setLoadingTenants(true);
         await queryTenants();
       } catch (err) {
         console.log(err);
       } finally {
-        setLoadingTenant(false);
+        setLoadingTenants(false);
       }
     }
 
@@ -126,7 +157,6 @@ export default function ExploreQueryEditor(props: Props) {
   useEffect(() => {
     async function queryClusters() {
       setClusterOptitons([]);
-      setSelectedCluster(undefined);
       if (!selectedTenant) {
         return;
       }
@@ -157,19 +187,19 @@ export default function ExploreQueryEditor(props: Props) {
         }
       });
       setClusterOptitons(clusterOptions);
-      if (clusterOptions.length > 0) {
+      if (selectedCluster === undefined && clusterOptions.length > 0) {
         setSelectedCluster(clusterOptions[0]);
       }
     }
 
     async function fetch() {
       try {
-        setLoadingCluster(true);
+        setLoadingClusters(true);
         await queryClusters();
       } catch (err) {
         console.log(err);
       } finally {
-        setLoadingCluster(false);
+        setLoadingClusters(false);
       }
     }
 
@@ -179,7 +209,6 @@ export default function ExploreQueryEditor(props: Props) {
   useEffect(() => {
     async function queryPods() {
       setPodOptions([]);
-      setSelectedPod(undefined);
       if (!selectedCluster) {
         return;
       }
@@ -205,19 +234,16 @@ export default function ExploreQueryEditor(props: Props) {
         return a.value > b.value ? 1 : -1;
       });
       setPodOptions(podOptions);
-      // if (podOptions.length > 0) {
-      //   setSelectedPod(podOptions[0]);
-      // }
     }
 
     async function fetch() {
       try {
-        setLoadingPod(true);
+        setLoadingPods(true);
         await queryPods();
       } catch (err) {
         console.log(err);
       } finally {
-        setLoadingPod(false);
+        setLoadingPods(false);
       }
     }
 
@@ -243,9 +269,9 @@ export default function ExploreQueryEditor(props: Props) {
     return () => document.removeEventListener(ADD_FILTER_EVENT, addFilter);
   }, [filters]);
 
-  const changeQueryRef = useRef<(expr: string) => void>();
-  changeQueryRef.current = (expr: string) => {
-    onChange?.({ ...query, expr });
+  const changeQueryRef = useRef<(query: MyQuery) => void>();
+  changeQueryRef.current = (query: MyQuery) => {
+    onChange?.(query);
   };
 
   useEffect(() => {
@@ -292,8 +318,17 @@ export default function ExploreQueryEditor(props: Props) {
         finalExpr += ` |= "${trimSearch}"`;
       }
     }
-    changeQueryRef.current!(finalExpr);
-  }, [selectedCluster, selectedPod, selectedLogType, search, filters]);
+    changeQueryRef.current!({
+      ...query,
+      tenant: selectedTenant ? `${selectedTenant.label}\n${selectedTenant.value}` : undefined,
+      cluster: selectedCluster ? `${selectedCluster.label}\n${selectedCluster.value}` : undefined,
+      logTypes,
+      pod: selectedPod?.value,
+      searchText: search,
+      filters: filters.join('\n'),
+      expr: finalExpr,
+    });
+  }, [selectedTenant, selectedCluster, selectedPod, selectedLogType, search, filters]);
 
   // logcli
   const [copied, setCopied] = useState(false);
@@ -338,7 +373,7 @@ export default function ExploreQueryEditor(props: Props) {
       <div style={{ display: 'flex' }}>
         <InlineField label="Tenant">
           <Select
-            isLoading={loadingTenant}
+            isLoading={loadingTenants}
             isClearable
             width={16}
             onChange={setSelectedTenant}
@@ -348,7 +383,7 @@ export default function ExploreQueryEditor(props: Props) {
         </InlineField>
         <InlineField label="Cluster" required={true} tooltip="Respond to namespace label, required.">
           <Select
-            isLoading={loadingCluster}
+            isLoading={loadingClusters}
             isClearable
             width={16}
             onChange={setSelectedCluster}
@@ -361,7 +396,7 @@ export default function ExploreQueryEditor(props: Props) {
             isClearable
             width={32}
             onChange={setSelectedLogType}
-            options={logTypeOptions}
+            options={LOG_TYPE_OPTIONS}
             value={selectedLogType}
             isMulti={true}
           />
@@ -371,7 +406,7 @@ export default function ExploreQueryEditor(props: Props) {
           tooltip="Aka pod name, each pod represents a tidb/tikv/pd instance, respond to instance label"
         >
           <Select
-            isLoading={loadingPod}
+            isLoading={loadingPods}
             isClearable
             width={16}
             onChange={setSelectedPod}
