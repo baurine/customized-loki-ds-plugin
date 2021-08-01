@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.2
+
+[PR #13](https://github.com/baurine/customized-loki-ds-plugin/pull/13)
+
+- Add more LogTypes options for TiFlash and backup & restore
+- Hide logs export button
+
 ## 0.1.1
 
 [PR #9](https://github.com/baurine/customized-loki-ds-plugin/pull/9)
