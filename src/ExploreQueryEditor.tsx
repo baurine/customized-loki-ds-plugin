@@ -11,14 +11,19 @@ import './style.css';
 /////////////////////
 
 const LOG_TYPE_OPTIONS: SelectableValue[] = [
-  'tidb',
-  'tikv',
-  'pd',
-  'tiflash',
-  'slowlog',
-  'rocksdblog',
-  'raftlog',
-].map((t) => ({ label: t, value: t }));
+  { value: 'tidb', label: 'tidb' },
+  { value: 'slowlog', label: 'tidb-slowlog' },
+  { value: 'pd', label: 'pd' },
+  { value: 'tikv', label: 'tikv' },
+  { value: 'rocksdblog', label: 'tikv-rocksdblog' },
+  { value: 'raftlog', label: 'tikv-raftlog' },
+  { value: 'tiflash', label: 'tiflash' },
+  { value: 'serverlog', label: 'tiflash-serverlog' },
+  { value: 'clusterlog', label: 'tiflash-clusterlog' },
+  { value: 'errorlog', label: 'tiflash-errorlog' },
+  { value: 'backup', label: 'backup' },
+  { value: 'restore', label: 'restore' },
+];
 
 export type Props = ExploreQueryFieldProps<DataSource, MyQuery, MyDataSourceOptions>;
 
