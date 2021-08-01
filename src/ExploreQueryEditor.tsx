@@ -450,7 +450,7 @@ export default function ExploreQueryEditor(props: Props) {
           <TagList tags={filters} className="tags" onClick={onFilterClick} />
         </InlineField>
       )}
-      <div className="query-field">
+      <div className="query-field" style={{ display: 'none' }}>
         <Tooltip content="Exporting logs by logcli command line tool, see below help panel to get details.">
           <Button size="sm" onClick={copyLogcli}>
             {copied ? 'Copied' : 'Copy'} logs export command
