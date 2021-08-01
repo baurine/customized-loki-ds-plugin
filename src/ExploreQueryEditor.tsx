@@ -11,14 +11,19 @@ import './style.css';
 /////////////////////
 
 const LOG_TYPE_OPTIONS: SelectableValue[] = [
-  'tidb',
-  'tikv',
-  'pd',
-  'tiflash',
-  'slowlog',
-  'rocksdblog',
-  'raftlog',
-].map((t) => ({ label: t, value: t }));
+  { value: 'tidb', label: 'tidb' },
+  { value: 'slowlog', label: 'tidb-slowlog' },
+  { value: 'pd', label: 'pd' },
+  { value: 'tikv', label: 'tikv' },
+  { value: 'rocksdblog', label: 'tikv-rocksdblog' },
+  { value: 'raftlog', label: 'tikv-raftlog' },
+  { value: 'tiflash', label: 'tiflash' },
+  { value: 'serverlog', label: 'tiflash-serverlog' },
+  { value: 'clusterlog', label: 'tiflash-clusterlog' },
+  { value: 'errorlog', label: 'tiflash-errorlog' },
+  { value: 'backup', label: 'backup' },
+  { value: 'restore', label: 'restore' },
+];
 
 export type Props = ExploreQueryFieldProps<DataSource, MyQuery, MyDataSourceOptions>;
 
@@ -445,7 +450,7 @@ export default function ExploreQueryEditor(props: Props) {
           <TagList tags={filters} className="tags" onClick={onFilterClick} />
         </InlineField>
       )}
-      <div className="query-field">
+      <div className="query-field" style={{ display: 'none' }}>
         <Tooltip content="Exporting logs by logcli command line tool, see below help panel to get details.">
           <Button size="sm" onClick={copyLogcli}>
             {copied ? 'Copied' : 'Copy'} logs export command
